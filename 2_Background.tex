@@ -1,26 +1,20 @@
 \section{Background}
 
-\subsection{Quantum Circuit Simulation}
-Several approaches have been designed to simulate quantum circuits on classical hardware, offering various trade-offs between memory efficiency, execution speed, and fidelity~\cite{qsim, svsim, suzuki2021qulacs, villalonga2019flexible}. 
-These simulation methodologies are generally categorized into two types: tensor network contraction and full state vector simulation.
+\begin{figure}[t]
+    \centering
+    % Ensure you have this file or use a placeholder
+    \includegraphics[width=0.9\columnwidth]{Figures/edge_back1.png}
+    \caption{The overall architecture of \EdgeQuantum. It utilizes a 4-buffer UVM pipeline to stream state vector chunks between NVMe storage and the GPU.}
+    \label{overall_architecture}
+\end{figure}
 
-\noindent\textbf{Tensor network simulation.}
-Tensor network simulation represents quantum states as a network of interconnected tensors and evaluates the circuit by contracting these tensors. 
-This method is highly effective for circuits with limited entanglement or shallow depth, as it avoids storing the entire state vector.
-However, its computational cost grows exponentially with the amount of entanglement (entanglement entropy) in the circuit, making it unsuitable for simulating deep, highly entangled quantum algorithms such as Quantum Volume or random circuits on edge devices with limited computational power~\cite{gray2018quimb, lykov2022tensor}.
+\subsection{GPU-Accelerated State Vector Simulation}
+Several approaches have been designed to simulate quantum circuits on classical hardware, offering trade-offs between scalability, accuracy, and computational complexity~\cite{qsim, svsim, suzuki2021qulacs, villalonga2019flexible}. While tensor network contraction reduces memory usage by avoiding explicit storage of the state vector, its performance decreases for deep and highly entangled circuits. Its computational cost grows exponentially with entanglement entropy~\cite{gray2018quimb, lykov2022tensor, pan2022simulation}. In contrast, full state vector simulation represents the quantum state as a complex vector of size $2^n$, where $n$ is the number of qubits. It captures superpositions and entanglements without approximation and provides exact amplitude information for validation and fidelity verification~\cite{guerreschi2020intel, de2007massively, qsim, suzuki2021qulacs}. This work focuses on full state vector simulation.
 
-\noindent\textbf{Full state vector simulation.}
-Full state vector simulation explicitly stores and updates the complex amplitudes of all $2^n$ basis states, where $n$ is the number of qubits. 
-It provides exact results and complete information about the quantum state, including phase and superposition, which is essential for algorithm verification and error analysis~\cite{guerreschi2020intel, de2007massively}.
-As the most general-purpose and accurate approach, our work focuses on full state vector simulation.
+\noindent\textbf{GPU execution model. }Modern simulators such as cuStateVec~\cite{bayraktar2023cuquantum} and Qiskit Aer~\cite{qiskit} are designed around GPU acceleration. The full state vector is allocated in GPU VRAM, and the circuit is processed layer by layer. For each layer, CUDA kernels sweep the state vector and apply quantum gate matrices to the amplitudes. Because data resides on the device, CUDA cores execute updates in parallel without intermediate transfers.
 
-Since full state vector simulation maintains the complete system state, it serves as the ground truth for validating quantum hardware and algorithms.
-However, it suffers from an exponential growth in memory requirements as the number of qubits increases.
-The memory complexity is $\mathcal{O}(2^n)$, with each amplitude requiring 16 bytes (double-precision complex) or 8 bytes (single-precision).
-For example, simulating 30 qubits requires 16~GB of memory, which exceeds the 8~GB unified memory of a standard NVIDIA Jetson Orin Nano.
-Furthermore, a 34-qubit simulation requires 256~GB, and a 39-qubit simulation demands 4~TB, far exceeding the physical DRAM capacity of any standalone edge system.
-Consequently, simulating such large-scale circuits on edge devices necessitates utilizing secondary storage (NVMe SSDs) as an extension of main memory.
-\EdgeQuantum is designed to address these memory constraints by enabling scalable full state vector simulation on resource-constrained edge architectures.
+\noindent\textbf{The memory wall. }GPU-accelerated simulation is limited by memory capacity. The memory requirement grows exponentially with the number of qubits. The complexity is $\mathcal{O}(2^n)$, and each complex amplitude requires 16 bytes in double precision or 8 bytes in single precision. A 30-qubit circuit requires 16~GB, exceeding the 8~GB limit of edge devices such as the NVIDIA Jetson Orin Nano. A 34-qubit circuit requires 256~GB, and a 39-qubit circuit requires 4~TB, exceeding DRAM capacity. Standard GPU simulators assume the full state vector fits in VRAM, so larger circuits cause Out-of-Memory failures.
+To address this, tiered memory management, asynchronous I/O scheduling, and lossless compression are required. \EdgeQuantum targets scalable full state vector simulation on resource-constrained edge devices.
 
 \subsection{Memory Architecture in Edge Computing}
 
@@ -31,10 +25,29 @@ However, despite this architectural advantage, the total memory capacity remains
 
 \begin{figure}[t]
     \centering
-    \includegraphics[width=0.95\columnwidth]{Figures/background_edge.pdf}
-    \caption{Memory hierarchy and data flow in edge computing architectures.}
-    \label{fig:edge_memory_hierarchy}
+    \begin{subfigure}[b]{\columnwidth}
+        \centering
+        \includegraphics[width=\linewidth]{Figures/edge_back2.png}
+        \caption{Unified DRAM (LPDDR5).}
+        \label{fig:bg_bw_dram}
+    \end{subfigure}
+
+    \vspace{0.5em}
+
+    \begin{subfigure}[b]{\columnwidth}
+        \centering
+        \includegraphics[width=\linewidth]{Figures/edge_back3.png}
+        \caption{External NVMe SSD.}
+        \label{fig:bg_bw_nvme}
+    \end{subfigure}
+    \vspace{-.2cm}
+
+    \caption{Bandwidth across the edge memory hierarchy on the Jetson Orin Nano. Even within the unified LPDDR5, access bandwidth varies by ~4$\times$ depending on the access path, and drops by another 18-400$\times$ when spilling to the external NVMe SSD.}
+    \label{fig:bg_bandwidth}
+    \vspace{-.2cm}
 \end{figure}
+
+
 
 Figure~\ref{fig:edge_memory_hierarchy} illustrates the memory hierarchy of a typical edge device.
 As depicted, the hierarchy consists of three tiers: on-chip caches, unified DRAM, and external NVMe storage.
