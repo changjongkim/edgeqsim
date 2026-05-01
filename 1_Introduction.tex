@@ -33,10 +33,10 @@ To overcome this memory barrier, existing approaches attempt to deploy high-perf
 \begin{table}[t]
 \caption{Comparison with prior work across key capabilities (Tiered: Tiered Memory Support, Comp: Compression Support).}
 \centering
-\footnotesize
-\begin{tabular}{p{3.5cm}|>{\centering\arraybackslash}c|c|c|c|c}
+\scriptsize
+\begin{tabularx}{\columnwidth}{p{2cm}|c|c|c|c|c}
 \toprule
-\textbf{Framework} & \textbf{Target} & \textbf{GPU} & \textbf{Tiered} & \textbf{Comp} & \textbf{Max Q} \\
+\textbf{Framework} & \textbf{Target} & \textbf{GPU} & \textbf{Tiered} & \textbf{Comp} & \textbf{Max Qubit} \\
 \midrule
 Qiskit Aer~\cite{qiskit} & General & \checkmark &  &  & 29 \\
 cuQuantum~\cite{bayraktar2023cuquantum} & General & \checkmark & \checkmark &  & 40+ \\
@@ -47,7 +47,7 @@ ScaleQsim~\cite{10.1145/3771577} & HPC & \checkmark &  &  & 42 \\
 BMQSim~\cite{zhang2025bmqsim} & Datacenter & \checkmark & \checkmark & \checkmark & 36 \\
 \textbf{\EdgeQuantum} & \textbf{Edge/IoT} & \checkmark & \checkmark & \checkmark & \textbf{39} \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \label{intro_table}
 \end{table}
 

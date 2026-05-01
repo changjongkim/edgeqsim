@@ -15,7 +15,7 @@ However, GPU-accelerated simulation is limited by memory capacity. Memory footpr
 
 To address this, out-of-core memory management is required. Frameworks such as BMQSim~\cite{zhang2025bmqsim} employ data compression and tiered memory pipelines to mitigate memory limits. However, these approaches are optimized for server-grade GPUs with discrete PCIe topologies and abundant host resources. When adapted to edge environments, their memory management falls back to blocking I/O on external NVMe storage. This architecture mismatch stalls GPU computation and introduces severe I/O latency. Therefore, to achieve scalable full state vector simulation on resource-constrained edge devices, a specialized memory management strategy that addresses these edge-specific hardware bottlenecks is strictly required.
 
-\subsection{Memory Architecture in Edge Computing}
+\subsection{Memory Architecture in Edge Computing}\label{back2}
 
 To handle data-intensive applications such as quantum simulation on edge devices, it is necessary to understand the underlying memory architecture. Unlike HPC clusters that use discrete CPUs and GPUs connected via PCIe, edge devices such as the NVIDIA Jetson Orin Nano use a System-on-Chip (SoC) design with a Unified Memory Architecture (UMA)~\cite{nvidia2022jetson}. In this architecture, the CPU and GPU share a single physical DRAM pool, eliminating PCIe data transfers. However, this integrated design introduces severe bandwidth asymmetry depending on the access path and storage tier.
 

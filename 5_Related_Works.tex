@@ -1,7 +1,18 @@
 \section{Related Work}
 \label{sec:related}
+\noindent\textbf{Optimizing Quantum Circuit Simulation.} Previous studies on quantum circuit simulation have focused on utilizing massive parallelism in GPUs and distributed clusters for full state vector simulation. These approaches accelerate execution by distributing the state across aggregated VRAM in leadership-class supercomputers~\cite{cuquantum, qsim, guerreschi2020intel, villalonga2019flexible}. Other studies propose static compilation and circuit partitioning to reduce communication overhead. These methods maximize kernel occupancy through precompiled kernels and optimized execution plans~\cite{zhang2021hyquas, xu2024atlas, zhang2022uniq}. Additionally, tensor network-based approaches reduce memory footprint by decomposing quantum states into interconnected tensors. These approaches provide savings for low-entanglement circuits while facing exponential complexity growth in deep, highly entangled circuits~\cite{gray2018quimb, lykov2022tensor, pan2022simulation, biamonte2017tensor}.
 
+Our study aligns with prior efforts to improve simulation efficiency. However, existing datacenter-centric approaches such as \textit{ScaleQsim} and \textit{cuQuantum} assume abundant memory resources and high-bandwidth interconnects. This assumption leads to execution failures on embedded edge devices where physical memory is strictly limited (e.g., 8~GB). In contrast, \EdgeQuantum targets resource-constrained devices. It partitions the state vector across the storage hierarchy rather than network nodes. This design uses a specialized 4-ring buffer pipeline.
+
+
+\noindent\textbf{Memory Expansion and I/O Optimization Strategies.} Previous studies on memory expansion focus on extending simulation capacity by offloading state vectors to high-performance NVMe SSDs in server environments. These approaches rely on OS-level demand paging or explicit memory mapping~\cite{park2022snuqs, wang2023enabling, reano2017intra}. Other work proposes lossless compression and adaptive encoding to reduce memory consumption. These methods trade CPU cycles for capacity~\cite{zhang2025bmqsim, wu2019full, zhang2024overcoming, li2021sv}. In the broader context of deep learning, approaches such as vDNN and FlashNeuron simplify memory management by offloading intermediate feature maps to backing stores~\cite{rhu2016vdnn, bae2021flashneuron}.
+
+While our study aligns with these offloading and compression techniques, generic strategies remain inefficient on edge devices due to the bandwidth asymmetry of consumer-grade SSDs and UMA constraints. \EdgeQuantum employs an asynchronous I/O strategy that serializes read and write operations to avoid NVMe contention. This is a critical optimization not considered in server-centric storage engines. Combined with UVM-aware zero-copy buffering and adaptive LZ4 compression, \EdgeQuantum improves pipeline efficiency and minimizes CPU-GPU synchronization overhead.
+
+\begin{comment}
+  
 \subsection{Optimizing Quantum Circuit Simulation}
+
 
 There have been many studies that optimize quantum circuit simulation to enhance performance on high-end hardware.
 Previous studies~\cite{cuquantum, qsim, guerreschi2020intel, villalonga2019flexible} focused on utilizing massive parallelism in GPUs and distributed clusters for full state vector simulation.
@@ -30,4 +41,5 @@ These approaches highlight key techniques for improving capacity in data-intensi
 Similarly, \EdgeQuantum faces comparable challenges in edge quantum simulation, where the state vector size far exceeds the unified memory capacity of the SoC.
 However, applying generic offloading techniques to edge devices is inefficient due to the bandwidth asymmetry of consumer-grade SSDs and the specific constraints of the Unified Memory Architecture (UMA).
 To address this, \EdgeQuantum employs an asynchronous I/O strategy that serializes read and write operations to avoid NVMe contention, a critical optimization ignored by server-centric storage engines.
-Combined with UVM-aware zero-copy buffering and adaptive LZ4 compression, \EdgeQuantum improves pipeline efficiency while minimizing CPU-GPU synchronization overhead.
+Combined with UVM-aware zero-copy buffering and adaptive LZ4 compression, \EdgeQuantum improves pipeline efficiency while minimizing CPU-GPU synchronization overhead.  
+\end{comment}
