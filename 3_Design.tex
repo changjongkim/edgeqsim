@@ -8,19 +8,15 @@ By utilizing Unified Virtual Memory (UVM) as a zero-copy staging buffer and impl
 \subsection{Overall Procedure}
 \label{design_overall}
 
-Figure~\ref{overall_architecture} illustrates the overall architecture and execution flow of \EdgeQuantum.
-The framework operates in two distinct phases: \textit{Initialization} and \textit{Execution}.
+Figure~\ref{overall_architecture} shows the overall procedure of \EdgeQuantum.
+\EdgeQuantum processes a quantum circuit simulation through dynamic resource profiling and a UVM-based storage pipeline.
 
-\noindent\textbf{Initialization.} 
-When a simulation task is submitted, \EdgeQuantum first performs a \textit{Resource Profiling} step.
-It queries the available GPU memory via \texttt{cudaMemGetInfo} and compares it against the required state vector size ($2^n \times 8$ bytes).
-\EdgeQuantum automatically selects the optimal execution mode:
-1) \textbf{Native Mode}: If the state vector fits within 80\% of the available physical RAM, the system allocates the entire state in GPU memory using \texttt{cudaMalloc}, enabling maximum performance similar to \textit{cuStateVec} (\ding{182}).
-2) \textbf{Tiered Mode}: If the state vector exceeds physical RAM, the system activates the tiered-memory engine. 
-In this mode, the \textit{Chunk Manager} partitions the logical state vector into $M$ chunks, where the chunk size (typically 256\,MB) is determined to balance GPU streaming multiprocessor (SM) occupancy with NVMe I/O granularity.
-Instead of standard device memory, \EdgeQuantum allocates four ring buffers using \texttt{cudaMallocManaged} with the \texttt{cudaMemAttachHost} flag. 
-This configuration allows the CPU to access these buffers for I/O operations without triggering expensive page faults or implicit driver-level migrations (\ding{183}).
-Finally, the \textit{State Initializer} writes the initial quantum state (typically $|0\rangle^{\otimes n}$) to the NVMe storage. For simulations larger than the physical SSD capacity ($n \ge 35$), the system initializes a "Ping-Pong" compressed file structure (\ding{184}).
+\noindent\textbf{Resource Profiling and Mode Selection.}
+When a quantum circuit simulation starts, \textit{Resource Profiler} calculates the required state vector size and compares it with the available memory capacity. Based on this comparison, \EdgeQuantum determines whether the state vector fits within the Unified Virtual Memory (UVM) space. If the state vector fits within the available memory, \EdgeQuantum operates in \textit{Native Mode}. In this mode, the \textit{GPU Compute Engine} allocates the entire state in memory and executes the simulation using \textit{cuStateVec}. If the state vector exceeds the memory capacity, \EdgeQuantum activates \textit{Tiered Mode}, which uses NVMe storage as an extension of the memory hierarchy. By selecting the execution path based on memory capacity, \EdgeQuantum uses available hardware resources and prevents out-of-memory (OOM) failures.
+
+\noindent\textbf{Tiered Mode Execution.}
+In Tiered Mode, \EdgeQuantum employs a 4-buffer pipeline within \textit{Unified Virtual Memory} to stream data between storage and the GPU. Unlike traditional out-of-core simulators that incur host-to-device transfer overheads, \EdgeQuantum establishes a zero-copy data path by leveraging the Unified Memory Architecture (UMA) of edge devices. The full state vector is partitioned into fixed-size chunks, and four UVM ring buffers (B0 to B3) serve as the staging area. During execution, the \textit{GPU Compute Engine} directly accesses the UVM buffers to retrieve the current state (\textit{Compute Data}), applies quantum gates, and writes back the result (\textit{Updated Data}). At the same time, the \textit{CPU Ping-Pong Compression Engine} handles the \textit{Offloading Data} between UVM and storage. It performs \textit{Async Read} operations to load upcoming chunks from the \textit{NVMe SSD} into UVM buffers and \textit{Async Write} operations to flush computed chunks back to storage. To address asymmetric read and write latency of consumer-grade TLC SSDs, the pipeline depth is set to four. This buffering allows the GPU to compute on one buffer while the CPU handles high-latency I/O for others, preventing pipeline stalls. The compression engine compresses chunks on the fly using a dual-file ping-pong layout, enabling \EdgeQuantum to simulate large quantum systems (e.g., 39 qubits) that exceed the physical storage capacity of the edge device.
+
 
 \begin{figure}[t]
     \centering
@@ -30,20 +26,11 @@ Finally, the \textit{State Initializer} writes the initial quantum state (typica
     \label{overall_architecture}
 \end{figure}
 
-\noindent\textbf{Execution.}
-After initialization, the \textit{Pipeline Coordinator} executes the quantum circuit layer by layer.
-For each layer, the system iterates through all chunks stored on the NVMe SSD.
-The core innovation of \EdgeQuantum is its I/O scheduling strategy.
-Our empirical analysis of consumer-grade NVMe SSDs (e.g., Samsung PM9A1) revealed a critical bottleneck: concurrent Read and Write operations cause severe bandwidth contention, degrading aggregate throughput by over 50\%.
-To address this, \EdgeQuantum enforces a \textit{Serialized I/O Policy}: Read operations and Write operations are strictly serialized, never executing simultaneously.
-Instead, the Write operation for a processed chunk is scheduled asynchronously to overlap with the GPU computation of the next chunk (\ding{185}).
-To enable this overlap without data races, the \textit{Memory Controller} dynamically toggles UVM buffer permissions between \texttt{AttachGlobal} (for GPU access) and \texttt{AttachHost} (for I/O access) using \texttt{cudaStreamAttachMemAsync} (\ding{186}).
-This zero-copy mechanism allows the GPU to compute on one buffer while the I/O threads read/write to others, effectively hiding the high latency of storage access (\ding{187}).
-
-
 
 \subsection{Tiered Memory Architecture with UVM}
 \label{design_memory}
+
+
 
 A fundamental challenge in edge computing is efficiently bridging the gap between high-speed GPU execution and low-speed storage.
 On NVIDIA Jetson platforms, the CPU and GPU share a physical DRAM pool (Unified Memory Architecture), yet standard memory allocation APIs often fail to leverage this advantage for storage-backed applications.
@@ -73,13 +60,15 @@ The available time budget $T_{budget}$ in a 4-buffer system is defined as:
 Given typical execution times on a Jetson Orin Nano ($T_{read} \approx 100$\,ms, $T_{compute} \approx 220$\,ms), the budget is approximately 960\,ms.
 Since the worst-case write latency $T_{write}$ is around 450\,ms, the condition $T_{budget} > T_{write}$ is satisfied ($960 > 450$), preventing pipeline stalls.
 
+
 \begin{figure}[t]
     \centering
-    % Placeholder for pipeline figure
-    \includegraphics[width=0.95\columnwidth]{Figures/fig_pipeline.pdf}
-    \caption{The 4-buffer pipeline strategy. By maintaining 4 active buffers, \EdgeQuantum ensures that slow NVMe write operations (red) can overlap with multiple GPU compute steps (green), hiding the latency.}
-    \label{fig:pipeline_diagram}
+    % Ensure you have this file or use a placeholder
+    \includegraphics[width=0.95\columnwidth]{Figures/edge_design3.3.png}
+    \caption{The overall architecture of \EdgeQuantum. It utilizes a 4-buffer UVM pipeline to stream state vector chunks between NVMe storage and the GPU.}
+    \label{overall_architecture}
 \end{figure}
+
 
 The pipeline state machine processes chunk $k$ using buffer $B_{k \pmod 4}$ as follows:
 \begin{enumerate}
@@ -91,6 +80,43 @@ The pipeline state machine processes chunk $k$ using buffer $B_{k \pmod 4}$ as f
 
 \subsection{LZ4 Ping-Pong Compression}
 \label{design_compression}
+
+\begin{algorithm}[t]
+\caption{Dynamic Ping-Pong Compression Strategy}
+\label{alg:pingpong}
+\begin{algorithmic}[1]
+\Require Gate Layer $L$, Total Chunks $M$
+\Ensure Compressed state vector is updated for Layer $L+1$
+
+\State $OffsetOut \gets 0$
+\If{$L \bmod 2 == 0$}
+    \State $FileIn \gets \mathrm{FileA}, \quad FileOut \gets \mathrm{FileB}$
+    \State $IdxIn \gets \mathrm{IndexA}, \quad IdxOut \gets \mathrm{IndexB}$
+\Else
+    \State $FileIn \gets \mathrm{FileB}, \quad FileOut \gets \mathrm{FileA}$
+    \State $IdxIn \gets \mathrm{IndexB}, \quad IdxOut \gets \mathrm{IndexA}$
+\EndIf
+
+\For{$c = 0$ \textbf{to} $M-1$}
+    \State \textit{// 1. Variable-size Read \& Decompress}
+    \State $OffsetIn \gets IdxIn[c]$
+    \State $SizeIn \gets IdxIn[c+1] - OffsetIn$
+    \State $CompBuf \gets \mathrm{AsyncRead}(FileIn, OffsetIn, SizeIn)$
+    \State $UVMBuf \gets \mathrm{LZ4Decompress}(CompBuf)$
+    \State \textit{// 2. Quantum Gate Simulation (Overlapped)}
+    \State $\mathrm{GPUCompute}(UVMBuf)$
+    \State \textit{// 3. Compress \& Append-only Write}
+    \State $SizeOut \gets \mathrm{LZ4Compress}(UVMBuf, CompBuf)$
+    \State $\mathrm{AsyncWrite}(FileOut, CompBuf, OffsetOut, SizeOut)$
+    \State \textit{// 4. Update Index Table}
+    \State $IdxOut[c] \gets OffsetOut$
+    \State $OffsetOut \gets OffsetOut + SizeOut$
+\EndFor
+\State $IdxOut[M] \gets OffsetOut$ \Comment{Record total compressed size}
+
+\end{algorithmic}
+\end{algorithm}
+
 
 For simulations where the state vector size exceeds the physical SSD capacity (e.g., $N \ge 35$ qubits requires $\ge 256$\,GB), raw storage becomes infeasible.
 \EdgeQuantum addresses this by integrating a transparent compression layer using the LZ4 algorithm, chosen for its extremely high decompression throughput.

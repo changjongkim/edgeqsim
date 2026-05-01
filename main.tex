@@ -1,43 +1,16 @@
 \documentclass[journal]{IEEEtran}
-\usepackage[utf8]{inputenc}
-%% Packages
-\usepackage{amsmath,amssymb,amsfonts}
-\usepackage{graphicx}
-\graphicspath{{figures/}}
-\usepackage{comment}
-\usepackage{booktabs}
-\usepackage{xcolor}
-\usepackage{hyperref}
-\usepackage{multirow}
-\usepackage{array}
-\usepackage{xspace}
-\usepackage{pifont}
-% removed conflicting `subfig`; using `subcaption` below
-\usepackage{float}
-\usepackage{url}
-\usepackage{cite}
-\usepackage{tikz}
-\usepackage{cite}
-\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{amssymb}
+\usepackage{amsmath}
 \usepackage{graphicx}
 \usepackage{textcomp}
 \usepackage{xcolor}
 \usepackage{tabularx}
-\usepackage{amsmath}
 \usepackage{braket}
-\usepackage{amsfonts}
-\usepackage{algorithm,algpseudocode} %for procedure
 \usepackage{booktabs}
-\usepackage{graphicx}
-\usepackage{textcomp}
-\usepackage{xcolor}
 \usepackage{tikz}
 \usepackage{bm}
 \usepackage{caption}
 \usepackage{subcaption}
-
-% Make figure and subfigure captions slightly larger for readability
-\captionsetup{font=small,labelfont=bf}
 \usepackage{pifont,array} %For ding
 \usepackage{multicol}
 \usepackage{multirow}
@@ -45,21 +18,32 @@
 \usepackage{xurl}
 \usepackage{xspace}
 \usepackage{comment}
-\usepackage{makecell}
+\usepackage{makecell, kotex}
 \usepackage{hyperref}
-\usepackage{colortbl }
-\usepackage{amsmath}
+\usepackage{colortbl}
 \usepackage[most]{tcolorbox} 
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}  % noend 옵션 추가
+
+\usepackage{titlesec}
+\titlespacing{\subsection}{0pt}{1pt}{0pt}
+\titlespacing{\section}{0pt}{2pt}{1pt}
+\setlength{\baselineskip}{8pt}
+\captionsetup{font=small}
+\setlength{\textfloatsep}{1pt plus 1.0pt minus 1.0pt}
+\setlength{\floatsep}{1pt plus 1pt minus 1pt}
+\setlength{\intextsep}{1pt plus 1pt minus 1pt}
+\DeclareUnicodeCharacter{2713}{\checkmark}
+
+
+\definecolor{pred}{rgb}{0.7843, 0.0039, 0.3137}
+\definecolor{dblue}{rgb}{0.0, 0.0, 1.0}
+\definecolor{sorange}{rgb}{0.91, 0.45, 0.32}
+\newcommand{\skim}[1]{{\color{sorange}{#1}}} %
+\newcommand{\changjong}[1]{{\color{pred}{#1}}}
+    
 
 \usetikzlibrary{fit,shapes,arrows,positioning}
-
-%% Space-saving adjustments
-\setlength{\tabcolsep}{3pt}
-\setlength{\textfloatsep}{6pt plus 1.0pt minus 2.0pt}
-\setlength{\floatsep}{6pt plus 1.0pt minus 2.0pt}
-\setlength{\intextsep}{6pt plus 1.0pt minus 2.0pt}
-\setlength{\abovecaptionskip}{4pt}
-\setlength{\belowcaptionskip}{2pt}
 
 %% Commands
 \newcommand{\edgeQsim}{\texttt{EdgeQuantum}\xspace}
@@ -78,14 +62,7 @@
 
 \maketitle
 \begin{abstract}
-Quantum circuit simulation is a critical workload for algorithm verification and error characterization, yet it remains predominantly confined to high-performance computing (HPC) and cloud infrastructure due to the exponential memory requirements of state vectors.
-On resource-constrained edge platforms, such as the NVIDIA Jetson, standard simulators face a hard "Memory Wall," capping feasible simulations at approximately 29 qubits on an 8~GB device.
-While swap-based techniques exist for server-grade systems, they fail to address the specific architectural bottlenecks of edge hardware—namely, the profound bandwidth asymmetry of consumer NVMe SSDs and the latency sensitivity of shared memory architectures.
-To bridge this gap, we present \EdgeQuantum, the first tiered-memory quantum circuit simulator specifically architected for embedded edge devices.
-\EdgeQuantum introduces a novel 4-buffer asynchronous pipeline that explicitly serializes read/write operations to avoid NVMe contention while overlapping slow TLC flash writes with GPU computation.
-Furthermore, it implements a ping-pong LZ4 compression scheme that leverages idle CPU cycles to dynamically expand effective storage capacity.
-Our evaluation on an 8~GB NVIDIA Jetson Orin Nano demonstrates that \EdgeQuantum enables the simulation of up to 39 qubits ($\approx$4~TB state vector)—effectively expanding the device's memory capacity by $512\times$.
-This capability allows edge devices to verify large-scale circuits, such as QFT and VQC, which were previously executable only on cloud-class resources.
+This paper presents \EdgeQuantum, a tiered-memory quantum circuit simulator designed to overcome the memory wall of resource-constrained edge devices. As quantum algorithms scale toward dozens of qubits for on-device verification of NISQ workloads, simulating their state vectors on edge devices demands coordinated multi-tier memory management beyond the device's physical DRAM capacity. \EdgeQuantum introduces a unified storage hierarchy that integrates GPU VRAM, unified DRAM, and external NVMe storage. With this design, \EdgeQuantum achieves zero-copy data movement across tiers through UVM-based attach toggling, hides TLC NAND write latency through a 4-buffer asynchronous pipeline with serialized NVMe access, and expands effective storage capacity through ping-pong LZ4 compression. Our evaluation across six quantum circuits on an 8\,GB NVIDIA Jetson Orin Nano shows that \EdgeQuantum enables 39-qubit (4\,TB) state-vector simulation, outperforming blocking I/O baselines by up to 1.48$\times$ while expanding effective memory capacity by 512$\times$.
 \end{abstract}
 
 \begin{IEEEkeywords}
