@@ -1,18 +1,13 @@
 \section{Evaluation}
 \label{sec:eval}
 
-\subsection{Evaluation Setup}
+\subsection{Evaluation Setup}\label{setup} 
 
-We evaluate \EdgeQuantum on a representative resource-constrained edge device to demonstrate its capability to perform large-scale quantum circuit simulation within a limited power and memory budget.
-The target hardware is the NVIDIA Jetson Orin Nano Developer Kit (8\,GB).
-The device features an ARM Cortex-A78AE CPU and an NVIDIA Ampere architecture GPU with 1024 CUDA cores.
-The system is equipped with 8\,GB of LPDDR5 Unified Memory shared between the CPU and GPU.
-For secondary storage, we utilize a 256\,GB Samsung PM9A1 NVMe SSD connected via PCIe Gen3 x4, which delivers sequential read/write throughput of approximately 2.6\,GB/s and 1.8\,GB/s, respectively.
-The entire system operates under a strict 15W power envelope.
+\noindent\textbf{Hardware Specification.} We evaluate \EdgeQuantum on the NVIDIA Jetson Orin Nano Developer Kit (8\,GB), a representative resource-constrained edge device. The device features an ARM Cortex-A78AE CPU and an NVIDIA Ampere architecture GPU with 1,024 CUDA cores, sharing 8 GB of LPDDR5 unified memory between the CPU and GPU. For secondary storage, we attach a 256\,GB Samsung PM9A1 NVMe SSD over PCIe Gen3 x4, providing approximately 2.6\,GB/s sequential read and 1.8\,GB/s sequential write throughput. The entire platform operates under a strict 15 W power envelope. 
 
-We evaluate \EdgeQuantum using six representative quantum circuits: Quantum Volume (QV), Variational Quantum Classifier (VQC), Quantum Support Vector Machine (QSVM), Random, GHZ, and Variational Quantum Eigensolver (VQE).
-We compare \EdgeQuantum with \textit{BMQSim-like}, a baseline representing a naive offloading approach that utilizes blocking I/O without the 4-buffer pipeline optimization.
-Both schemes utilize the identical \textit{cuStateVec} backend for GPU execution, ensuring that performance differences are solely attributable to the I/O architecture.
+\noindent\textbf{Baselines.} We compare \EdgeQuantum against three baselines that share the same \textit{cuStateVec}~\cite{bayraktar2023cuquantum} backend for gate execution. This isolates the impact of memory and I/O architecture from compute-engine differences. \textit{cuQuantum (Native)} represents in-memory GPU execution that allocates the full state vector in VRAM. It serves as the upper-bound reference for small-scale workloads. \textit{cuQuantum (UVM)} extends cuQuantum with managed memory. It issues host-driven staging and incurs page-migration overhead. \textit{BMQSim-like} reproduces the blocking I/O behavior of server-grade tiered simulators (e.g., BMQSim~\cite{zhang2025bmqsim}) on edge devices. It stages chunks through standard \texttt{cudaMemcpy} without our 4-buffer pipeline or UVM zero-copy path. This captures the performance ceiling of naive offloading. We do not directly execute BMQSim because its build assumes server-grade discrete GPUs and PCIe topologies that are unavailable on the Jetson SoC. %For compression evaluation in Section~\ref{sec:extreme_scale}, we additionally compare against \textit{\EdgeQuantum (w/o LZ4)}, an ablation that disables ping-pong compression while retaining the asynchronous pipeline, isolating the contribution of the compression layer to capacity expansion. 
+
+\noindent\textbf{Workloads.} We evaluate \EdgeQuantum using six representative quantum circuits that span structured, parameterized, and entanglement-stress benchmarks: Quantum Volume (QV), Variational Quantum Classifier (VQC), Quantum Support Vector Machine (QSVM), Random circuits, GHZ states, and Variational Quantum Eigensolver (VQE). Circuits are executed at depths from 1 to 5, across qubit counts ranging from 27 (1\,GB state vector) to 39 (4\,TB state vector), spanning the in-memory regime, the tiered-memory regime, and the compression-required regime where the logical state vector exceeds physical SSD capacity.
 
 
 \subsection{Performance Analysis: 29-34 Qubits}
