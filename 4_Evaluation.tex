@@ -11,118 +11,148 @@
 
 \changjong{Need new experiment}
 
-\subsection{Performance Analysis: 29-34 Qubits}
-
-\subsection{Extreme Scalability: 35–39 Qubits}
-
-\subsection{I/O Breakdown (why it works)}
-\subsection{Storage Efficiency (compression)}
-\subsection{Fidelity (correctness)}
-\subsection{Ablation Study (component contribution)}
-
-
-\subsection{Performance Analysis: 29--34 Qubits}
-\label{sec:perf_analysis}
-
-Figure~\ref{fig:speedup_34q} and Table~\ref{tab:main_results} compare the simulation time of \EdgeQuantum against the \textit{BMQSim-like} baseline across state vector sizes ranging from 4\,GB (29 qubits) to 128\,GB (34 qubits).
-This range represents the "Tiered Memory" regime where the state vector exceeds the 8\,GB physical memory of the device but fits within the SSD capacity without compression.
-
-\noindent\textbf{Overall Speedup.}
-\EdgeQuantum consistently outperforms the blocking I/O baseline across all circuit types and qubit counts.
-The speedup becomes more pronounced as the problem size increases.
-For example, at 29 qubits (4\,GB), where the OS page cache still provides some benefit, the speedup is modest (approx. 1.09--1.18$\times$).
-However, at 33--34 qubits (64--128\,GB), where I/O contention becomes the dominant bottleneck, \EdgeQuantum achieves significant gains.
-Notably, for the QSVM circuit at 33 qubits, \EdgeQuantum reduces the runtime from 430.7s to 291.4s, achieving a peak speedup of \textbf{1.48$\times$}.
-Similarly, for the VQC circuit at 31 qubits, \EdgeQuantum achieves a \textbf{1.45$\times$} speedup (254.7s vs. 175.6s).
-These results confirm that our 4-buffer pipeline effectively hides the NVMe write latency, which is the primary bottleneck in TLC-based consumer SSDs.
+\subsection{Tiered Performance Analysis: 29-34 Qubits}
 
 \begin{table}[t]
 \centering
-\caption{Simulation time comparison (in seconds) between BMQSim-like (Block) and \EdgeQuantum (Async) for Depth=5. Speedup is shown in parentheses.}
+\caption{Simulation time comparison (in seconds) between BMQSim-like (Block) and \EdgeQuantum (Async) for Depth=5.}
+\setlength{\tabcolsep}{3pt}
 \resizebox{\columnwidth}{!}{%
-\begin{tabular}{|l|rr|rr|rr|}
+\begin{tabular}{|l|rr|rr|rr|rr|rr|}
 \hline
-\textbf{Circuit} & \multicolumn{2}{c|}{\textbf{32 Qubits (32\,GB)}} & \multicolumn{2}{c|}{\textbf{33 Qubits (64\,GB)}} & \multicolumn{2}{c|}{\textbf{34 Qubits (128\,GB)}} \\
-& \multicolumn{1}{c}{Block} & \multicolumn{1}{c|}{\textbf{EdgeQ}} & \multicolumn{1}{c}{Block} & \multicolumn{1}{c|}{\textbf{EdgeQ}} & \multicolumn{1}{c}{Block} & \multicolumn{1}{c|}{\textbf{EdgeQ}} \\
+\textbf{Circuit} & \multicolumn{2}{c|}{\textbf{30Q (8\,GB)}} & \multicolumn{2}{c|}{\textbf{31Q (16\,GB)}} & \multicolumn{2}{c|}{\textbf{32Q (32\,GB)}} & \multicolumn{2}{c|}{\textbf{33Q (64\,GB)}} & \multicolumn{2}{c|}{\textbf{34Q (128\,GB)}} \\
+ & \multicolumn{1}{c}{Blk} & \multicolumn{1}{c|}{\textbf{EdgeQ}} & \multicolumn{1}{c}{Blk} & \multicolumn{1}{c|}{\textbf{EdgeQ}} & \multicolumn{1}{c}{Blk} & \multicolumn{1}{c|}{\textbf{EdgeQ}} & \multicolumn{1}{c}{Blk} & \multicolumn{1}{c|}{\textbf{EdgeQ}} & \multicolumn{1}{c}{Blk} & \multicolumn{1}{c|}{\textbf{EdgeQ}} \\
 \hline
-QV      & 450.4 & \textbf{352.9} (1.28$\times$) & 920.8 & \textbf{727.1} (1.27$\times$) & 1853.8 & \textbf{1462.6} (1.27$\times$) \\
-VQC     & 514.8 & \textbf{361.7} (1.42$\times$) & 1017.9 & \textbf{756.8} (1.34$\times$) & 2069.0 & \textbf{1483.9} (1.39$\times$) \\
-QSVM    & 203.3 & \textbf{144.7} (1.40$\times$) & 430.7 & \textbf{291.4} (1.48$\times$) & 849.7 & \textbf{593.1} (1.43$\times$) \\
-Random  & 484.7 & \textbf{357.2} (1.36$\times$) & 974.9 & \textbf{722.7} (1.35$\times$) & 1963.5 & \textbf{1463.9} (1.34$\times$) \\
-GHZ     & 85.4 & \textbf{70.4} (1.21$\times$) & 173.5 & \textbf{143.5} (1.21$\times$) & 351.1 & \textbf{290.2} (1.21$\times$) \\
-VQE     & 509.5 & \textbf{361.0} (1.41$\times$) & 1027.9 & \textbf{738.1} (1.39$\times$) & 2050.3 & \textbf{1473.9} (1.39$\times$) \\
+QV & 57.7 & \textbf{48.5} & 207.6 & \textbf{171.3} & 450.4 & \textbf{352.9} & 920.8 & \textbf{727.1} & 1853.8 & \textbf{1462.6} \\
+VQC & 95.2 & \textbf{76.9} & 254.7 & \textbf{175.6} & 514.8 & \textbf{361.7} & 1017.9 & \textbf{756.8} & 2069.0 & \textbf{1483.8} \\
+QSVM & 33.9 & \textbf{30.8} & 102.2 & \textbf{70.4} & 203.3 & \textbf{144.7} & 430.7 & \textbf{291.4} & 849.7 & \textbf{593.1} \\
+Random & 67.0 & \textbf{57.8} & 233.9 & \textbf{169.9} & 484.7 & \textbf{357.2} & 974.9 & \textbf{722.7} & 1963.5 & \textbf{1463.9} \\
+GHZ & 10.4 & \textbf{8.6} & 40.8 & \textbf{33.5} & 85.4 & \textbf{70.4} & 173.5 & \textbf{143.5} & 351.1 & \textbf{290.2} \\
+VQE & 84.7 & \textbf{76.9} & 259.0 & \textbf{176.9} & 509.5 & \textbf{361.0} & 1027.9 & \textbf{738.1} & 2050.3 & \textbf{1473.9} \\
 \hline
 \end{tabular}%
 }
 \label{tab:main_results}
 \end{table}
 
-\noindent\textbf{Circuit Characteristics.}
-The performance gain varies by circuit complexity.
-\textit{High-complexity circuits} (VQC, VQE, Random), which involve dense gate operations and frequent state vector updates, benefit most from the pipeline.
-For VQC at 34 qubits, \EdgeQuantum saves nearly 10 minutes of runtime (2069s $\to$ 1483s).
-This is because the heavy GPU computation (approx. 220ms per chunk) provides ample time window to hide the slow NVMe write operations (approx. 450ms) via the 4-buffer overlap.
-In contrast, \textit{Low-complexity circuits} (GHZ) show a stable but lower speedup of $\sim$1.21$\times$.
-Since GHZ involves very few gates per layer, the GPU compute time is too short to fully hide the write latency, yet \EdgeQuantum still outperforms the blocking baseline by avoiding read/write contention.
+\begin{comment}
+\begin{table}[t]
+\centering
+\caption{Simulation time comparison (in seconds) between BMQSim-like (Block) and \EdgeQuantum (Async) for Depth=5.}
+\setlength{\tabcolsep}{3pt} % 컬럼 간격 축소
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{|l|rr|rr|rr|rr|rr|rr|}
+\hline
+\textbf{Circuit} & \multicolumn{2}{c|}{\textbf{29Q (4\,GB)}} & \multicolumn{2}{c|}{\textbf{30Q (8\,GB)}} & \multicolumn{2}{c|}{\textbf{31Q (16\,GB)}} & \multicolumn{2}{c|}{\textbf{32Q (32\,GB)}} & \multicolumn{2}{c|}{\textbf{33Q (64\,GB)}} & \multicolumn{2}{c|}{\textbf{34Q (128\,GB)}} \\
+ & \multicolumn{1}{c}{Blk} & \multicolumn{1}{c|}{\textbf{EdgeQ}} & \multicolumn{1}{c}{Blk} & \multicolumn{1}{c|}{\textbf{EdgeQ}} & \multicolumn{1}{c}{Blk} & \multicolumn{1}{c|}{\textbf{EdgeQ}} & \multicolumn{1}{c}{Blk} & \multicolumn{1}{c|}{\textbf{EdgeQ}} & \multicolumn{1}{c}{Blk} & \multicolumn{1}{c|}{\textbf{EdgeQ}} & \multicolumn{1}{c}{Blk} & \multicolumn{1}{c|}{\textbf{EdgeQ}} \\
+\hline
+QV & 29.0 & \textbf{24.6} & 57.7 & \textbf{48.5} & 207.6 & \textbf{171.3} & 450.4 & \textbf{352.9} & 920.8 & \textbf{727.1} & 1853.8 & \textbf{1462.6} \\
+VQC & 42.4 & \textbf{38.4} & 95.2 & \textbf{76.9} & 254.7 & \textbf{175.6} & 514.8 & \textbf{361.7} & 1017.9 & \textbf{756.8} & 2069.0 & \textbf{1483.8} \\
+QSVM & 16.9 & \textbf{15.5} & 33.9 & \textbf{30.8} & 102.2 & \textbf{70.4} & 203.3 & \textbf{144.7} & 430.7 & \textbf{291.4} & 849.7 & \textbf{593.1} \\
+Random & 33.5 & \textbf{29.0} & 67.0 & \textbf{57.8} & 233.9 & \textbf{169.9} & 484.7 & \textbf{357.2} & 974.9 & \textbf{722.7} & 1963.5 & \textbf{1463.9} \\
+GHZ & 5.2 & \textbf{4.3} & 10.4 & \textbf{8.6} & 40.8 & \textbf{33.5} & 85.4 & \textbf{70.4} & 173.5 & \textbf{143.5} & 351.1 & \textbf{290.2} \\
+VQE & 42.4 & \textbf{38.3} & 84.7 & \textbf{76.9} & 259.0 & \textbf{176.9} & 509.5 & \textbf{361.0} & 1027.9 & \textbf{738.1} & 2050.3 & \textbf{1473.9} \\
+\hline
+\end{tabular}%
+}
+\label{tab:main_results}
+\end{table}    
+\end{comment}
+
+
+
+
+
+\subsection{I/O Breakdown (why it works)}
+
+\begin{table*}[t]
+\centering
+\tiny
+\caption{Detailed I/O Breakdown (seconds) and Speedup from 32 to 34 Qubits.}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{|c|c|rrrr|rrrr|r|}
+\hline
+\multirow{2}{*}{\textbf{Qubits}} & \multirow{2}{*}{\textbf{Circuit}} & \multicolumn{4}{c|}{\textbf{Baseline (Block I/O + cudaMemcpy)}} & \multicolumn{4}{c|}{\textbf{\EdgeQuantum (Async UVM Zero-copy)}} & \multirow{2}{*}{\textbf{Speedup}} \\
+\cline{3-10}
+ & & \textbf{Read} & \textbf{Comp} & \textbf{Write} & \textbf{Total} & \textbf{Read} & \textbf{Comp} & \textbf{Write} & \textbf{Total} & \\
+\hline
+\multirow{3}{*}{32q}
+ & VQC & 142.3 & 3.3 & 369.2 & 514.8 & 81.3 & 3.2 & 277.3 & 361.7 & \textbf{1.42$\times$} \\
+ & GHZ & 25.2 & 0.5 & 59.7 & 85.4 & 15.6 & 0.5 & 54.4 & 70.4 & \textbf{1.21$\times$} \\
+ & VQE & 140.0 & 3.2 & 366.3 & 509.5 & 84.2 & 3.1 & 273.8 & 361.0 & \textbf{1.41$\times$} \\
+\hline
+\multirow{3}{*}{33q}
+ & VQC & 292.8 & 6.5 & 718.6 & 1017.9 & 177.4 & 6.3 & 573.1 & 756.8 & \textbf{1.35$\times$} \\
+ & GHZ & 50.7 & 1.1 & 121.7 & 173.5 & 31.4 & 1.1 & 111.1 & 143.5 & \textbf{1.21$\times$} \\
+ & VQE & 286.2 & 6.6 & 735.1 & 1027.9 & 164.5 & 6.1 & 567.6 & 738.1 & \textbf{1.39$\times$} \\
+\hline
+\multirow{3}{*}{34q}
+ & VQC & 560.7 & 13.4 & 1494.9 & 2069.0 & 328.0 & 12.5 & 1143.3 & 1483.8 & \textbf{1.39$\times$} \\
+ & GHZ & 102.7 & 2.2 & 246.3 & 351.1 & 69.7 & 2.0 & 218.5 & 290.2 & \textbf{1.21$\times$} \\
+ & VQE & 573.2 & 13.0 & 1464.1 & 2050.3 & 345.8 & 12.0 & 1116.1 & 1473.9 & \textbf{1.39$\times$} \\
+\hline
+\end{tabular}%
+}
+\label{tab:io_breakdown}
+\end{table*}
+
+
+
+
+\subsection{Storage Efficiency (compression)}
+
 
 \begin{figure}[t]
     \centering
-    \includegraphics[width=0.95\columnwidth]{Figures/fig_34q_comparison.pdf}
-    \caption{Runtime comparison at 34 qubits (128\,GB state vector). \EdgeQuantum reduces simulation time by up to 30\% compared to blocking I/O.}
-    \label{fig:runtime_34q}
+    \begin{subfigure}[b]{0.42\columnwidth}
+        \centering
+        \includegraphics[width=\linewidth]{Figures/storage_eff1.png}
+        \caption{Memory growth.}
+        \label{intro_motivation_a}
+    \end{subfigure}\hfill
+    \begin{subfigure}[b]{0.55\columnwidth}
+        \centering
+        \includegraphics[width=\linewidth]{Figures/storage_eff2.png}
+        \caption{VQE latency.}
+        \label{intro_motivation_b}
+    \end{subfigure}
+    \caption{Memory wall and per-iteration VQE latency on resource-constrained edge devices.}
+    \label{intro_motivation}
 \end{figure}
 
-\subsection{Extreme Scalability: 35--39 Qubits}
-\label{sec:extreme_scale}
 
-To demonstrate the capability of \EdgeQuantum beyond the physical limits of the SSD, we evaluate the system with LZ4 compression enabled for 35--39 qubits.
-This regime corresponds to logical state vector sizes of 256\,GB to 4\,TB, which is up to \textbf{512$\times$} larger than the device RAM and \textbf{16$\times$} larger than the SSD capacity.
 
-\noindent\textbf{35-Qubit Transition.}
-At 35 qubits (256\,GB), the raw state vector exceeds the 230\,GB usable capacity of the partition.
-\EdgeQuantum automatically engages the LZ4 ping-pong mechanism.
-Table~\ref{tab:extreme_results} shows the results.
-Despite the overhead of compression, \EdgeQuantum maintains practical runtimes.
-For example, a 35-qubit VQC simulation (Depth=5) completes in 41.2 minutes (2471s).
-Comparing this to the 34-qubit result (1483s), the scaling factor is $1.66\times$, which is better than the theoretical $2\times$ growth of the state space.
-This sub-linear scaling is due to the efficiency of LZ4 on sparse state vectors, which reduces the effective I/O bandwidth requirement.
+\subsection{Extreme Scalability: 35–39 Qubits}
+
 
 \begin{table}[t]
 \centering
-\caption{Extreme-scale simulation times (seconds) for EdgeQuantum with LZ4 compression (Depth=5).}
+\scriptsize
+\caption{Extreme-scale simulation times (seconds) for \EdgeQuantum with LZ4 compression (Depth=5).}
 \resizebox{\columnwidth}{!}{%
 \begin{tabular}{|l|r|r|r|r|r|}
 \hline
-\textbf{Circuit} & \textbf{35q (256GB)} & \textbf{36q (512GB)} & \textbf{37q (1TB)} & \textbf{38q (2TB)} & \textbf{39q (4TB)} \\
+\textbf{Circuit} & \textbf{35Q (256GB)} & \textbf{36Q (512GB)} & \textbf{37Q (1TB)} & \textbf{38Q (2TB)} & \textbf{39Q (4TB)} \\
 \hline
-Random & 1,900 & 3,831 & 7,642 & 15,253 & 30,535 \\
-QV     & 1,627 & 3,286 & 7,641 & 13,021 & 26,047 \\
-VQC    & 2,471 & 4,947 & 7,645 & 19,809 & 39,717 \\
-QSVM   & 987 & 1,984 & 7,642 & 7,922 & 15,885 \\
-VQE    & 2,469 & 4,936 & 7,643 & 19,816 & 7,938 (D1) \\
+Random & 590.79 & 1,218.33 & 2,460.25 & 4,968.82 & 9,864.12 \\
+QV     & 593.48 & 1,236.56 & 2,448.61 & 4,968.15 & 9,864.63 \\
+VQC    & 610.50 & 1,242.84 & 2,490.04 & 5,004.95 & 9,912.18 \\
+QSVM   & 250.81 & 492.51 & 978.83 & 1,974.19 & 3,960.33 \\
+GHZ    & 119.10 & 246.77 & 492.53 & 990.21 & 1,980.20 \\
+VQE    & 617.09 & 1,224.21 & 2,454.56 & 5,004.44 & 9,900.70 \\
 \hline
 \end{tabular}%
 }
 \label{tab:extreme_results}
 \end{table}
 
-\noindent\textbf{4TB Simulation on Edge.}
-The most significant result is the successful execution of 39-qubit simulations.
-As shown in Table~\ref{tab:extreme_results}, a 39-qubit Random circuit (Depth=5) completes in 30,535 seconds ($\approx$8.5 hours).
-While this is a long duration, it represents a workload that is fundamentally impossible on existing edge simulators.
-The linear scaling of runtime from 35 to 39 qubits (approx. $2\times$ per qubit) indicates that the "Ping-Pong" file compression strategy remains stable even as file sizes grow into the terabyte range.
-Interestingly, at 37 qubits, we observe a convergence of runtimes for simpler circuits (Random, QV, QSVM) to $\approx$7640s.
-This suggests that at the 1\,TB scale, the system hits a bandwidth saturation point where the throughput is limited by the LZ4 compression/decompression rate rather than the raw NVMe speed or GPU compute capability.
 
-\begin{figure}[t]
-    \centering
-    \includegraphics[width=0.95\columnwidth]{Figures/fig_scalability.pdf}
-    \caption{Extreme scalability of \EdgeQuantum from 35 to 39 qubits (log scale). The system maintains exponential scaling consistent with problem size growth, enabling 4\,TB simulations on an 8\,GB device.}
-    \label{fig:extreme_scaling}
-\end{figure}
 
 \subsection{Fidelity and Stability}
 Since \EdgeQuantum partitions the state vector and relies on frequent I/O, ensuring numerical stability is critical.
 We verified the fidelity of the final state vector against small-scale \textit{cuQuantum} CPU simulations for verifying correctness.
 For all circuits up to 30 qubits (where verification is feasible), \EdgeQuantum achieved a fidelity of $1.0 - \epsilon$ (where $\epsilon < 10^{-6}$), confirming that the chunk-based processing and LZ4 compression/decompression cycle preserves numerical precision (single-precision float).
 The successful completion of 151 benchmark runs without a single crash or I/O error validates the robustness of the 4-buffer pipeline and the UVM management logic.
+\subsection{Ablation Study (component contribution)}
+
+
