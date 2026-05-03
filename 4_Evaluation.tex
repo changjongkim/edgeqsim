@@ -147,12 +147,42 @@ VQE    & 617.09 & 1,224.21 & 2,454.56 & 5,004.44 & 9,900.70 \\
 \end{table}
 
 
+\subsection{Impact of number of UVM buffer}
+
+
+
+\begin{figure}[!t]
+    \centering
+    
+    \hspace*{0.09\linewidth}
+    % --- (1) Legend at the top ---
+    \includegraphics[width=0.6\linewidth]{Figures/lagend_buffers.png}
+    \vspace{-.2cm}
+
+    % --- (2) Subfigures side-by-side ---
+    \subfloat[32 Qubit.]{
+        \includegraphics[width=0.46\linewidth]{Figures/32buffer.png}
+        \label{32qubit_buffer}
+        \vspace{-.3cm}
+    }
+    \subfloat[36 Qubit.]{
+        \includegraphics[width=0.46\linewidth]{Figures/36buffer.png}
+        \label{36qubit_buffer}
+            \vspace{-.3cm}
+    }
+
+        \vspace{-.2cm}
+    % --- (3) Caption ---
+    \caption{Comparison of average retrieval latency across tiers.}
+    \vspace{-.2cm}
+    \label{bufferimpact}
+\end{figure}
+
 
 \subsection{Fidelity and Stability}
 Since \EdgeQuantum partitions the state vector and relies on frequent I/O, ensuring numerical stability is critical.
 We verified the fidelity of the final state vector against small-scale \textit{cuQuantum} CPU simulations for verifying correctness.
 For all circuits up to 30 qubits (where verification is feasible), \EdgeQuantum achieved a fidelity of $1.0 - \epsilon$ (where $\epsilon < 10^{-6}$), confirming that the chunk-based processing and LZ4 compression/decompression cycle preserves numerical precision (single-precision float).
 The successful completion of 151 benchmark runs without a single crash or I/O error validates the robustness of the 4-buffer pipeline and the UVM management logic.
-\subsection{Ablation Study (component contribution)}
 
 
