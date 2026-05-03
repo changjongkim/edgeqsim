@@ -9,7 +9,7 @@
 
 \noindent\textbf{Workloads.} We evaluate \EdgeQuantum using six representative quantum circuits that span structured, parameterized, and entanglement-stress benchmarks: Quantum Volume (QV), Variational Quantum Classifier (VQC), Quantum Support Vector Machine (QSVM), Random circuits, GHZ states, and Variational Quantum Eigensolver (VQE). Circuits are executed at depths from 1 to 5, across qubit counts ranging from 27 (1\,GB state vector) to 39 (4\,TB state vector), spanning the in-memory regime, the tiered-memory regime, and the compression-required regime where the logical state vector exceeds physical SSD capacity.
 
-\subsection{Tiered Performance Analysis: 29-34 Qubits}
+\subsection{Tiered Performance Analysis: 30-34 Qubits}
 
 \begin{table}[t]
 \centering
@@ -76,17 +76,17 @@ VQE & 42.4 & \textbf{38.3} & 84.7 & \textbf{76.9} & 259.0 & \textbf{176.9} & 509
 \cline{3-10}
  & & \textbf{Read} & \textbf{Comp} & \textbf{Write} & \textbf{Total} & \textbf{Read} & \textbf{Comp} & \textbf{Write} & \textbf{Total} & \\
 \hline
-\multirow{3}{*}{32q}
+\multirow{3}{*}{32Q}
  & VQC & 142.3 & 3.3 & 369.2 & 514.8 & 81.3 & 3.2 & 277.3 & 361.7 & \textbf{1.42$\times$} \\
  & GHZ & 25.2 & 0.5 & 59.7 & 85.4 & 15.6 & 0.5 & 54.4 & 70.4 & \textbf{1.21$\times$} \\
  & VQE & 140.0 & 3.2 & 366.3 & 509.5 & 84.2 & 3.1 & 273.8 & 361.0 & \textbf{1.41$\times$} \\
 \hline
-\multirow{3}{*}{33q}
+\multirow{3}{*}{33Q}
  & VQC & 292.8 & 6.5 & 718.6 & 1017.9 & 177.4 & 6.3 & 573.1 & 756.8 & \textbf{1.35$\times$} \\
  & GHZ & 50.7 & 1.1 & 121.7 & 173.5 & 31.4 & 1.1 & 111.1 & 143.5 & \textbf{1.21$\times$} \\
  & VQE & 286.2 & 6.6 & 735.1 & 1027.9 & 164.5 & 6.1 & 567.6 & 738.1 & \textbf{1.39$\times$} \\
 \hline
-\multirow{3}{*}{34q}
+\multirow{3}{*}{34Q}
  & VQC & 560.7 & 13.4 & 1494.9 & 2069.0 & 328.0 & 12.5 & 1143.3 & 1483.8 & \textbf{1.39$\times$} \\
  & GHZ & 102.7 & 2.2 & 246.3 & 351.1 & 69.7 & 2.0 & 218.5 & 290.2 & \textbf{1.21$\times$} \\
  & VQE & 573.2 & 13.0 & 1464.1 & 2050.3 & 345.8 & 12.0 & 1116.1 & 1473.9 & \textbf{1.39$\times$} \\
