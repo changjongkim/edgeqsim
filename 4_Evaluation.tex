@@ -13,7 +13,7 @@
 
 \begin{table}[t]
 \centering
-\caption{Simulation time comparison (in seconds) between BMQSim-like (Block) and \EdgeQuantum (Async) (Depth=5).}
+\caption{Simulation time comparison (in seconds) between BMQSim-like (Block) and \EdgeQuantum (Async) without LZ4 compression (Depth=5).}
 \setlength{\tabcolsep}{3pt}
 \resizebox{\columnwidth}{!}{%
 \begin{tabular}{|l|rr|rr|rr|rr|rr|}
@@ -63,7 +63,7 @@ VQE & 42.4 & \textbf{38.3} & 84.7 & \textbf{76.9} & 259.0 & \textbf{176.9} & 509
 
 
 
-\subsection{I/O Breakdown (why it works)}
+\subsection{I/O Breakdown}
 
 \begin{table*}[t]
 \centering
@@ -96,7 +96,7 @@ VQE & 42.4 & \textbf{38.3} & 84.7 & \textbf{76.9} & 259.0 & \textbf{176.9} & 509
 \label{tab:io_breakdown}
 \end{table*}
 
-Since \EdgeQuantum streams state vector chunks through asynchronous storage I/O while overlapping with GPU computation, the source of its end-to-end speedup must be attributed across distinct phases of the data path. It is necessary to analyze how each phase contributes to the overall reduction in simulation time. Table~\ref{tab:io_breakdown} decomposes the per-circuit execution time of the BMQSim-like baseline and \EdgeQuantum into Read, Compute, and Write phases at 32 to 34 qubits.
+Since \EdgeQuantum streams state vector chunks through asynchronous storage I/O while overlapping with GPU computation, the source of its end-to-end speedup must be attributed across distinct phases of the data path. It is necessary to analyze how each phase contributes to the overall reduction in simulation time. Table~\ref{tab:io_breakdown} decomposes the per-circuit execution time of the BMQSim-like baseline and \EdgeQuantum into Read, Write, and Compute phases at 32 to 34 qubits.
 
 \noindent\textbf{Read.} Across all configurations, \EdgeQuantum reduces read latency by 1.47$\times$ to 1.75$\times$, with the gain largely independent of circuit complexity. For example, at 32Q VQC the read time drops from 142.3,s to 81.3,s (1.75$\times$). At 33Q VQE it falls from 286.2,s to 164.5,s (1.74$\times$). GHZ performs minimal computation and still achieves 1.47$\times$ to 1.62$\times$ read speedup. This reduction reflects the \textit{I/O Serialization Policy}. The BMQSim-like baseline issues concurrent reads and writes that fragment the NVMe controller queue into small-block accesses. This degrades performance toward the 62,MB/s random read regime measured in Section~\ref{back2}. By isolating I/O directions, \EdgeQuantum sustains the 1.38,GB/s sequential read bandwidth.
 
