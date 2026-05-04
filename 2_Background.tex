@@ -31,8 +31,6 @@ Quantum circuit simulation involves trade-offs between scalability and computati
 
 \subsection{Memory Architecture in Edge Computing}\label{back2}
 
-To handle data-intensive applications such as quantum simulation on edge devices, it is necessary to understand the underlying memory architecture. Unlike HPC clusters that use discrete CPUs and GPUs connected via PCIe, edge devices such as the NVIDIA Jetson Orin Nano use a System-on-Chip (SoC) design with a Unified Memory Architecture (UMA)~\cite{nvidia2022jetson}. In this architecture, the CPU and GPU share a single physical DRAM pool, eliminating PCIe data transfers. However, this integrated design introduces severe bandwidth asymmetry depending on the access path and storage tier.
-
 \begin{figure}[t]
     \centering
     \begin{subfigure}[b]{\columnwidth}
@@ -57,6 +55,9 @@ To handle data-intensive applications such as quantum simulation on edge devices
     \vspace{-.2cm}
 \end{figure}
 
+
+
+To handle data-intensive applications such as quantum simulation on edge devices, it is necessary to understand the underlying memory architecture. Unlike HPC clusters that use discrete CPUs and GPUs connected via PCIe, edge devices such as the NVIDIA Jetson Orin Nano use a System-on-Chip (SoC) design with a Unified Memory Architecture (UMA)~\cite{nvidia2022jetson}. In this architecture, the CPU and GPU share a single physical DRAM pool, eliminating PCIe data transfers. However, this integrated design introduces severe bandwidth asymmetry depending on the access path and storage tier.
 
 
 
