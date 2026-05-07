@@ -245,19 +245,20 @@ We verified the fidelity of the final state vector against small-scale \textit{C
 
 \begin{table}[t]
 \centering
-\caption{State fidelity $F = |\langle\psi_\text{exact}|\psi_\text{lossy}\rangle|^2$ at depth 5 across truncation depths. Bold column marks the chosen operating depth ($T=8$).}
-\setlength{\tabcolsep}{6pt}
-\scriptsize
-\begin{tabular}{|l|c|c|c|c|}
+\caption{State fidelity $F = |\langle\psi_\text{exact}|\psi_\text{lossy}\rangle|^2$ at depth 5 across truncation depths and the maximum qubit count supported in the dual-file ping-pong layout within the 500\,GB SSD at $T=8$. Bold column marks the chosen operating depth.}
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.1}
+\footnotesize
+\begin{tabular}{c|c|c|c|c|c}
 \hline
-\textbf{Circuit} & \textbf{T=10} & \textbf{T=8} & \textbf{T=6} & \textbf{T=4} \\
+\textbf{Circuit} & \textbf{T=10} & \textbf{T=8} & \textbf{T=6} & \textbf{T=4} & \textbf{Max Q @ 500\,GB} \\
 \hline
-GHZ    & 0.9998 & \textbf{0.9998} & 0.9888 & 0.9453 \\
-QSVM   & 0.9993 & \textbf{0.9982} & 0.9885 & 0.9553 \\
-QV     & 0.9970 & \textbf{0.9919} & 0.9453 & 0.7812 \\
-Random & 0.9965 & \textbf{0.9952} & 0.9544 & 0.8213 \\
-VQE    & 0.9957 & \textbf{0.9938} & 0.9470 & 0.8114 \\
-VQC    & 0.9968 & \textbf{0.9983} & 0.9514 & 0.7900 \\
+GHZ    & 0.9998 & \textbf{0.9998} & 0.9888 & 0.9453 & 39 \\
+QSVM   & 0.9993 & \textbf{0.9982} & 0.9885 & 0.9553 & 39 \\
+QV     & 0.9970 & \textbf{0.9919} & 0.9453 & 0.7812 & 39 \\
+Random & 0.9965 & \textbf{0.9952} & 0.9544 & 0.8213 & 36 \\
+VQE    & 0.9957 & \textbf{0.9938} & 0.9470 & 0.8114 & 36 \\
+VQC    & 0.9968 & \textbf{0.9983} & 0.9514 & 0.7900 & 36 \\
 \hline
 \end{tabular}
 \label{tab:fidelity}
