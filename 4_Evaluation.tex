@@ -132,7 +132,7 @@ Since the 500GB physical NVMe SSD on the Jetson platform cannot accommodate raw 
 \noindent\textbf{Compression Ratio Sweep.} Figure~\ref{fig:eff_ratio} compares per-circuit compression ratios across the LZ4 baseline and four mantissa truncation depths. As truncation depth decreases from $T=10$ to $T=8$, the QV ratio expands from 16.2$\times$ to 32.7$\times$, while the VQC ratio scales from 1.91$\times$ to 2.16$\times$. Each truncation depth zeros the lower mantissa bits before LZ4, corresponding to per-file ratios from 2.16$\times$ (VQC) to 255$\times$ (GHZ) at $T=8$ across the six circuits. The byte shuffle groups same-position bytes across amplitudes to expose zero-runs in the truncated lower bytes, yielding ratios above the LZ4-only baseline by up to 6$\times$ for QV. The $T=8$ point reflects the chosen operating depth, whereas $T=6$ further increases the ratio for QV (32.7$\times$$\rightarrow$44.7$\times$) and $T=4$ reduces it (44.7$\times$$\rightarrow$38.0$\times$). Thus, \EdgeQuantum fits a 39-qubit GHZ simulation within 32GB of NVMe storage at $T=8$, whereas dense circuits achieve per-file compression of 2.16$\times$-2.85$\times$ that supports up to 36 qubits within the 500GB capacity.
 
 
-\noindent\textbf{Performance Benefit.} Figure~\ref{fig:eff_speedup} compares per-circuit simulation time of \EdgeQuantum with and without mantissa-truncated LZ4 compression at 34Q, isolating the compression speedup from capacity necessity since the raw state vector still fits the 500GB SSD without compression. Compression yields a 2.02$\times$-4.59$\times$ speedup across the six circuit types, with the largest gain on GHZ (290.2s $\rightarrow$ 63.3s, 4.59$\times$) and the smallest on VQC (1483.8s $\rightarrow$ 733.5s, 2.02$\times$). This range arises because the per-circuit compression ratio determines I/O reduction between UVM and NVMe, and high-ratio circuits (GHZ, QSVM, QV) transition into a regime dominated by compression and decompression overhead while dense circuits (VQC, Random, VQE) remain partially I/O-bound. At 34Q, all circuits start heavily I/O-bound regardless of compute density, so compression delivers speedup proportional to the I/O reduction it provides. The asynchronous pipeline alone capped GHZ at 1.21$\times$ (Section~\ref{4.2}) because its narrow compute window limited write-latency overlap. Compression bypasses this compute-window dependence by reducing I/O volume directly, so GHZ achieves a 4.59$\times$ speedup that matches the high-ratio circuits (QSVM 4.57$\times$, QV 4.30$\times$) and exceeds the dense circuits (2.02$\times$-2.35$\times$).
+\noindent\textbf{Performance Benefit.} Figure~\ref{fig:eff_speedup} compares per-circuit simulation time of \EdgeQuantum with and without mantissa-truncated LZ4 compression at 34Q, isolating the compression speedup from capacity necessity since the raw state vector still fits the 500GB SSD without compression. Compression yields a 1.73$\times$-4.59$\times$ speedup across the six circuit types, with the largest gain on GHZ (290.2s $\rightarrow$ 63.3s, 4.59$\times$) and the smallest on VQC (1483.8s $\rightarrow$ 858.2s, 1.73$\times$). This range arises because the per-circuit compression ratio determines I/O reduction between UVM and NVMe, and high-ratio circuits (GHZ, QSVM, QV) transition into a regime dominated by compression and decompression overhead while dense circuits (VQC, Random, VQE) remain partially I/O-bound. At 34Q, all circuits start heavily I/O-bound regardless of compute density, so compression delivers speedup proportional to the I/O reduction it provides. The asynchronous pipeline alone capped GHZ at 1.21$\times$ (Section~\ref{4.2}) because its narrow compute window limited write-latency overlap. Compression bypasses this compute-window dependence by reducing I/O volume directly, so GHZ achieves a 4.59$\times$ speedup that matches the high-ratio circuits (QSVM 4.57$\times$, QV 4.18$\times$) and exceeds the dense circuits (1.73$\times$-2.04$\times$).
 
 
 
@@ -143,19 +143,19 @@ Since the 500GB physical NVMe SSD on the Jetson platform cannot accommodate raw 
 \begin{table}[t]
 \centering
 \scriptsize
-\caption{Extreme-scale simulation times (seconds) for \EdgeQuantum with mantissa-truncated LZ4 compression at $T=6$ (Depth=5). Dash indicates configurations that exceed the 500GB SSD capacity in the dual-file ping-pong layout.}
+\caption{Extreme-scale simulation times (seconds) for \EdgeQuantum with mantissa-truncated LZ4 compression at $T=8$ (Depth=5). Dash indicates configurations that exceed the 500GB SSD capacity in the dual-file ping-pong layout.}
 \resizebox{\columnwidth}{!}{%
 \begin{tabular}{|l|r|r|r|r|r|}
 \hline
 \textbf{Circuit} & \textbf{35Q (256GB)} & \textbf{36Q (512GB)} & \textbf{37Q (1TB)} & \textbf{38Q (2TB)} & \textbf{39Q (4TB)} \\
 \hline
 GHZ    & 119.10 & 246.77 & 492.53 & 990.21 & 1,980.20 \\
-QSVM   & 251.49 & 493.84 & 981.47 & 1,979.51 & 3,970.93 \\
-QV     & 632.96 & 1,318.59 & 2,611.45 & 5,298.55 & 10,520.62 \\
+QSVM   & 251.69 & 494.23 & 982.25 & 1,981.10 & 3,974.19 \\
+QV     & 650.45 & 1,355.27 & 2,683.68 & 5,445.10 & 10,811.64 \\
 \hline
-Random & 1,150.86 & 2,373.30 & --- & --- & --- \\
-VQE    & 1,265.49 & 2,510.27 & --- & --- & --- \\
-VQC    & 1,384.00 & 2,817.50 & --- & --- & --- \\
+Random & 1,328.69 & 2,739.91 & --- & --- & --- \\
+VQE    & 1,486.57 & 2,949.12 & --- & --- & --- \\
+VQC    & 1,619.05 & 3,295.61 & --- & --- & --- \\
 \hline
 \end{tabular}%
 }
@@ -164,7 +164,7 @@ VQC    & 1,384.00 & 2,817.50 & --- & --- & --- \\
 
 Beyond 34 qubits, the logical state vector exceeds the 500GB SSD capacity by up to 8$\times$ (4TB at 39Q). This makes the mantissa-truncated LZ4 ping-pong compression layer mandatory for execution, enabling \EdgeQuantum to operate where alternative simulators fail. Table~\ref{tab:extreme_results} shows the per-circuit simulation times across 35Q (256GB) to 39Q (4TB).
 
-As shown in the table, \EdgeQuantum exhibits stable, near-linear scalability as the state vector doubles at each qubit increment. For high-ratio circuits (GHZ, QSVM, QV), runtime tracks the 16$\times$ data volume growth, increasing 15.8$\times$$-$16.6$\times$ from 119.1s$-$633.0s at 35Q to 1,980.2s$-$10,520.6s at 39Q (e.g., 10,520.6s or $\approx$2.92 hours for QV). Dense circuits stop at 36Q within the 500GB capacity, with Random, VQE, and VQC completing 36Q in 2,373.3s, 2,510.3s, and 2,817.5s, respectively. This near 2$\times$ time growth per qubit confirms that the ping-pong pipeline maintains compression throughput at the 4~TB scale for high-ratio circuits without degradation from queue contention or fragmentation.
+As shown in the table, \EdgeQuantum exhibits stable, near-linear scalability as the state vector doubles at each qubit increment. For high-ratio circuits (GHZ, QSVM, QV), runtime tracks the 16$\times$ data volume growth, increasing 15.8$\times$$-$16.6$\times$ from 119.1s$-$650.5s at 35Q to 1,980.2s$-$10,811.6s at 39Q (e.g., 10,811.6s or $\approx$3.00 hours for QV). Dense circuits stop at 36Q within the 500GB capacity, with Random, VQE, and VQC completing 36Q in 2,739.9s, 2,949.1s, and 3,295.6s, respectively. This near 2$\times$ time growth per qubit confirms that the ping-pong pipeline maintains compression throughput at the 4~TB scale for high-ratio circuits without degradation from queue contention or fragmentation.
 
 This regime is accessible to \EdgeQuantum because of its UMA-optimized compression path. Server-grade simulators such as \textit{BMQSim} apply compression at the GPU level, relying on VRAM to stage and compress data, which is infeasible on edge devices. When the logical state vector reaches or exceeds the 500GB SSD capacity in the ping-pong layout ($\geq$35Q), the raw state cannot be persisted on disk, leaving \textit{BMQSim-like} with no chunks to stage from storage. Even at smaller scales, dedicating GPU cycles to compression contends with quantum gate kernels for the same compute resources. By performing mantissa-truncated LZ4 compression on the CPU during the I/O offloading phase, \EdgeQuantum exploits otherwise idle CPU cores and preserves GPU compute cycles for quantum gate operations. Among the three baselines defined in Section\ref{setup}, \textit{cuQuantum} variants fail at 29Q because of DRAM exhaustion, and \textit{BMQSim-like} cannot start beyond 34Q because of SSD exhaustion, leaving \EdgeQuantum as the only framework to reach the 4TB regime on this 8GB device.
 
@@ -181,19 +181,19 @@ This regime is accessible to \EdgeQuantum because of its UMA-optimized compressi
 \textbf{Qubits} & \textbf{Circuit} & \textbf{pread} & \textbf{decomp.} & \textbf{compute} & \textbf{compress} & \textbf{pwrite} & \textbf{Total} \\
 \hline
 \multirow{3}{*}{34Q}
- & VQC & 121.9 & 226.9 & 12.6 & 84.1 & 288.0 & 733.5 \\
+ & VQC & 158.9 & 226.9 & 12.6 & 84.1 & 375.7 & 858.2 \\
  & GHZ & 0.4 & 44.3 & 2.0 & 15.7 & 0.9 & 63.3 \\
- & VQE & 111.5 & 221.3 & 11.8 & 82.1 & 232.2 & 658.9 \\
+ & VQE & 148.9 & 221.3 & 11.8 & 82.1 & 310.1 & 774.2 \\
 \hline
 \multirow{3}{*}{35Q}
- & VQC & 268.1 & 421.6 & 25.1 & 157.4 & 511.8 & 1384.0 \\
+ & VQC & 348.9 & 421.6 & 25.1 & 157.4 & 666.0 & 1619.0 \\
  & GHZ & 0.5 & 83.3 & 4.1 & 29.6 & 1.6 & 119.1 \\
- & VQE & 206.0 & 426.4 & 24.3 & 159.4 & 449.4 & 1265.5 \\
+ & VQE & 275.4 & 426.4 & 24.3 & 159.4 & 601.0 & 1486.5 \\
 \hline
 \multirow{3}{*}{36Q}
- & VQC & 555.6 & 856.7 & 50.9 & 320.9 & 1033.4 & 2817.5 \\
+ & VQC & 723.5 & 856.7 & 50.9 & 320.9 & 1343.6 & 3295.6 \\
  & GHZ & 1.0 & 172.8 & 8.0 & 61.8 & 3.2 & 246.8 \\
- & VQE & 432.9 & 847.6 & 49.6 & 314.1 & 866.0 & 2510.3 \\
+ & VQE & 578.7 & 847.6 & 49.6 & 314.1 & 1159.1 & 2949.1 \\
 \hline
 \end{tabular}%
 }
@@ -242,7 +242,7 @@ At 32Q, where the working set occupies a moderate fraction of physical memory, 6
 \subsection{Fidelity and Stability}
 Since \EdgeQuantum partitions the state vector and relies on frequent I/O, ensuring numerical stability is critical.
 We verified the fidelity of the final state vector against small-scale \textit{Cirq} CPU simulations for verifying correctness.
-For all circuits up to 30 qubits (where verification is feasible), \EdgeQuantum achieved a fidelity of $1.0 - \epsilon$ (where $\epsilon < 10^{-6}$), confirming that the chunk-based processing and LZ4 compression/decompression cycle preserves numerical precision (single-precision float).
+For all circuits up to 30 qubits (where verification is feasible), \EdgeQuantum at $T=8$ achieved measured state fidelities of $F \geq 0.9919$ across the six circuits, ranging from 0.9919 (QV) to 0.9998 (GHZ), confirming that the mantissa-truncated LZ4 compression/decompression cycle bounds the error within the truncation depth $T$.
 The successful completion of 151 benchmark runs without a single crash or I/O error validates the robustness of the 4-buffer pipeline and the UVM management logic.
 
 
