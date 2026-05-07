@@ -143,7 +143,7 @@ Since the 500GB physical NVMe SSD on the Jetson platform cannot accommodate raw 
 \begin{table}[t]
 \centering
 \scriptsize
-\caption{Extreme-scale simulation times (seconds) for \EdgeQuantum with mantissa-truncated LZ4 compression at $T=8$ (Depth=5). Dash indicates configurations that exceed the 500GB SSD capacity in the dual-file ping-pong layout.}
+\caption{Extreme-scale simulation times (seconds) for \EdgeQuantum at $T=8$ (depth 5). Dash: exceeds 500 GB SSD ping-pong capacity.}
 \resizebox{\columnwidth}{!}{%
 \begin{tabular}{|l|r|r|r|r|r|}
 \hline
@@ -153,9 +153,9 @@ GHZ    & 119.10 & 246.77 & 492.53 & 990.21 & 1,980.20 \\
 QSVM   & 251.69 & 494.23 & 982.25 & 1,981.10 & 3,974.19 \\
 QV     & 650.45 & 1,355.27 & 2,683.68 & 5,445.10 & 10,811.64 \\
 \hline
-Random & 1,328.69 & 2,739.91 & --- & --- & --- \\
-VQE    & 1,486.57 & 2,949.12 & --- & --- & --- \\
-VQC    & 1,619.05 & 3,295.61 & --- & --- & --- \\
+Random & 1,328.69 & 2,739.91 & \multicolumn{1}{c|}{---} & \multicolumn{1}{c|}{---} & \multicolumn{1}{c|}{---} \\
+VQE    & 1,486.57 & 2,949.12 & \multicolumn{1}{c|}{---} & \multicolumn{1}{c|}{---} & \multicolumn{1}{c|}{---} \\
+VQC    & 1,619.05 & 3,295.61 & \multicolumn{1}{c|}{---} & \multicolumn{1}{c|}{---} & \multicolumn{1}{c|}{---} \\
 \hline
 \end{tabular}%
 }
@@ -240,12 +240,11 @@ At 32Q, where the working set occupies a moderate fraction of physical memory, 6
 
 
 \subsection{Fidelity and Stability}
-Since \EdgeQuantum partitions the state vector and relies on frequent I/O, ensuring numerical stability is critical.
-We verified the fidelity of the final state vector against small-scale \textit{Cirq} CPU simulations for verifying correctness.
+
 
 \begin{table}[t]
 \centering
-\caption{State fidelity $F = |\langle\psi_\text{exact}|\psi_\text{lossy}\rangle|^2$ at depth 5 and maximum qubit count reachable in the dual-file ping-pong layout within the 500\,GB SSD across truncation depths. Bold $T=8$ columns mark the chosen operating depth.}
+\caption{State fidelity $F = |\langle\psi_\text{exact}|\psi_\text{lossy}\rangle|^2$ and maximum qubit count on the 500 GB SSD across truncation depths $T$ (depth 5). Bold $T=8$: chosen operating depth.}
 \setlength{\tabcolsep}{4pt}
 \renewcommand{\arraystretch}{1.1}
 \footnotesize
@@ -266,7 +265,9 @@ VQC    & 0.9968 & \textbf{0.9983} & 0.9514 & 0.7900 & 35 & \textbf{36} & 36 & 36
 \label{tab:fidelity}
 \end{table}
 
-For all circuits up to 30 qubits (where verification is feasible), Table~\ref{tab:fidelity} reports the measured state fidelity and the maximum qubit count reachable on the 500\,GB SSD across truncation depths $T \in \{10, 8, 6, 4\}$ at depth 5. At the chosen $T=8$ operating point, fidelity ranges from 0.9919 (QV) to 0.9998 (GHZ), maintaining $F \geq 0.99$ across the six circuits, and the ping-pong layout supports 39Q for sparse and Clifford-structured circuits (GHZ, QSVM, QV) and 36Q for dense circuits (Random, VQE, VQC). Lower $T$ values trade fidelity for compression ($T=6$ drops dense circuits to 0.9453--0.9544 and $T=4$ further to 0.78--0.95), while $T=10$ raises all circuits above 0.9957 but caps QV at 38Q and VQC at 35Q within the 500\,GB capacity (Figure~\ref{fig:eff_ratio}).
-The successful completion of 151 benchmark runs without a single crash or I/O error validates the robustness of the 4-buffer pipeline and the UVM management logic.
+Since \EdgeQuantum partitions the state vector and relies on frequent I/O, ensuring numerical stability is critical. We verified the fidelity of the final state vector against small-scale \textit{Cirq} CPU simulations. For all circuits up to 30 qubits, Table~\ref{tab:fidelity} reports state fidelity and maximum qubit count on the 500 GB SSD across $T \in \{10, 8, 6, 4\}$ at depth 5. At $T=8$, fidelity ranges from 0.9919 (QV) to 0.9998 (GHZ) with $F \geq 0.99$ across all circuits, supporting 39Q for sparse and Clifford-structured circuits and 36Q for dense circuits. Lower $T$ trades fidelity for compression ($T=4$ drops dense to 0.78-0.95), while $T=10$ caps QV at 38Q and VQC at 35Q within the 500 GB capacity.
+
+
+
 
 
