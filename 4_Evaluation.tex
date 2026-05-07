@@ -201,7 +201,7 @@ This regime is accessible to \EdgeQuantum because of its UMA-optimized compressi
 
 \begin{table}[t]
 \centering
-\caption{I/O breakdown (seconds) for \EdgeQuantum with mantissa-truncated LZ4 ping-pong compression at $T=6$ across 34-36 qubits (Depth=5).}
+\caption{I/O breakdown (seconds) for \EdgeQuantum with mantissa-truncated LZ4 ping-pong compression across 34-36 qubits.}
 \setlength{\tabcolsep}{3pt}
 \scriptsize
 \resizebox{\columnwidth}{!}{%
@@ -231,7 +231,7 @@ This regime is accessible to \EdgeQuantum because of its UMA-optimized compressi
 
 
 
-Table~\ref{tab:io_breakdown_compressed} decomposes the execution time of \EdgeQuantum with LZ4 compression into physical I/O, CPU compression, and GPU compute phases across 34 to 36 qubits.
+Table~\ref{tab:io_breakdown_compressed} decomposes the execution time of \EdgeQuantum with mantissa-truncated LZ4 ping-pong compression into physical I/O, CPU compression, and GPU compute phases across 34 to 36 qubits.
 
 \noindent\textbf{Bottleneck Shift for High-Ratio Circuits. }Compression and decompression dominate the total execution time for high-ratio circuits, shifting the primary bottleneck from physical I/O to the CPU. For 34Q GHZ ($R=255\times$), physical I/O operations (\texttt{pread} and \texttt{pwrite}) account for 1.3s, representing 2.1\% of the 63.3s total execution time. Conversely, CPU-driven LZ4 decompression and compression consume 60.0s, constituting 94.8\% of the total duration. This profile demonstrates that the 255$\times$ data volume reduction eliminates the NVMe bandwidth constraint. The system transitions into a CPU-bound regime where execution time depends primarily on compression throughput, validating the design trade-off introduced in Section~\ref{design_compression}.
 
