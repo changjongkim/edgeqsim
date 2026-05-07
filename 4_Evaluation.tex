@@ -12,27 +12,6 @@
 
 \subsection{Tiered Performance Analysis: 30-34 Qubits}\label{4.2}
 
-\begin{table}[t]
-\centering
-\caption{Simulation time comparison (in seconds) between \textit{BMQSim-like} (Block) and \EdgeQuantum (Async) without LZ4 compression (Depth=5).}
-\setlength{\tabcolsep}{3pt}
-\resizebox{\columnwidth}{!}{%
-\begin{tabular}{|l|rr|rr|rr|rr|rr|}
-\hline
-\textbf{Circuit} & \multicolumn{2}{c|}{\textbf{30Q (8\,GB)}} & \multicolumn{2}{c|}{\textbf{31Q (16\,GB)}} & \multicolumn{2}{c|}{\textbf{32Q (32\,GB)}} & \multicolumn{2}{c|}{\textbf{33Q (64\,GB)}} & \multicolumn{2}{c|}{\textbf{34Q (128\,GB)}} \\
- & \multicolumn{1}{c}{Blk} & \multicolumn{1}{c|}{\textbf{EdgeQ}} & \multicolumn{1}{c}{Blk} & \multicolumn{1}{c|}{\textbf{EdgeQ}} & \multicolumn{1}{c}{Blk} & \multicolumn{1}{c|}{\textbf{EdgeQ}} & \multicolumn{1}{c}{Blk} & \multicolumn{1}{c|}{\textbf{EdgeQ}} & \multicolumn{1}{c}{Blk} & \multicolumn{1}{c|}{\textbf{EdgeQ}} \\
-\hline
-QV & 57.7 & \textbf{48.5} & 207.6 & \textbf{171.3} & 450.4 & \textbf{352.9} & 920.8 & \textbf{727.1} & 1853.8 & \textbf{1462.6} \\
-VQC & 95.2 & \textbf{76.9} & 254.7 & \textbf{175.6} & 514.8 & \textbf{361.7} & 1017.9 & \textbf{756.8} & 2069.0 & \textbf{1483.8} \\
-QSVM & 33.9 & \textbf{30.8} & 102.2 & \textbf{70.4} & 203.3 & \textbf{144.7} & 430.7 & \textbf{291.4} & 849.7 & \textbf{593.1} \\
-Random & 67.0 & \textbf{57.8} & 233.9 & \textbf{169.9} & 484.7 & \textbf{357.2} & 974.9 & \textbf{722.7} & 1963.5 & \textbf{1463.9} \\
-GHZ & 10.4 & \textbf{8.6} & 40.8 & \textbf{33.5} & 85.4 & \textbf{70.4} & 173.5 & \textbf{143.5} & 351.1 & \textbf{290.2} \\
-VQE & 84.7 & \textbf{76.9} & 259.0 & \textbf{176.9} & 509.5 & \textbf{361.0} & 1027.9 & \textbf{738.1} & 2050.3 & \textbf{1473.9} \\
-\hline
-\end{tabular}%
-}
-\label{tab:main_results}
-\end{table}
 
 \begin{comment}
 \begin{table}[t]
@@ -62,6 +41,27 @@ VQE & 42.4 & \textbf{38.3} & 84.7 & \textbf{76.9} & 259.0 & \textbf{176.9} & 509
 
 \noindent\textbf{Circuit-Level Behavior.} The speedup magnitude depends on each circuit's gate density, which determines the GPU compute window available to overlap with background writes. Compute-dense circuits (VQC, VQE, Random) show the largest gains (1.34$\times$ to 1.46$\times$ at 31 to 34Q). Their longer gate kernels offer time to hide the 256ms write latency. In contrast, GHZ applies very few gates per layer and shows a stable but lower speedup of $\sim$1.21$\times$ across all qubit counts. The limited compute window leaves less room for overlap. \EdgeQuantum still outperforms blocking I/O by isolating read and write traffic on the NVMe controller. This shows that the I/O serialization policy provides a baseline benefit independent of circuit compute density.
 
+\begin{table}[t]
+\centering
+\caption{Simulation time comparison (in seconds) between \textit{BMQSim-like} (Block) and \EdgeQuantum (Async) without LZ4 compression (Depth=5).}
+\setlength{\tabcolsep}{3pt}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{|l|rr|rr|rr|rr|rr|}
+\hline
+\textbf{Circuit} & \multicolumn{2}{c|}{\textbf{30Q (8\,GB)}} & \multicolumn{2}{c|}{\textbf{31Q (16\,GB)}} & \multicolumn{2}{c|}{\textbf{32Q (32\,GB)}} & \multicolumn{2}{c|}{\textbf{33Q (64\,GB)}} & \multicolumn{2}{c|}{\textbf{34Q (128\,GB)}} \\
+ & \multicolumn{1}{c}{Blk} & \multicolumn{1}{c|}{\textbf{EdgeQ}} & \multicolumn{1}{c}{Blk} & \multicolumn{1}{c|}{\textbf{EdgeQ}} & \multicolumn{1}{c}{Blk} & \multicolumn{1}{c|}{\textbf{EdgeQ}} & \multicolumn{1}{c}{Blk} & \multicolumn{1}{c|}{\textbf{EdgeQ}} & \multicolumn{1}{c}{Blk} & \multicolumn{1}{c|}{\textbf{EdgeQ}} \\
+\hline
+QV & 57.7 & \textbf{48.5} & 207.6 & \textbf{171.3} & 450.4 & \textbf{352.9} & 920.8 & \textbf{727.1} & 1853.8 & \textbf{1462.6} \\
+VQC & 95.2 & \textbf{76.9} & 254.7 & \textbf{175.6} & 514.8 & \textbf{361.7} & 1017.9 & \textbf{756.8} & 2069.0 & \textbf{1483.8} \\
+QSVM & 33.9 & \textbf{30.8} & 102.2 & \textbf{70.4} & 203.3 & \textbf{144.7} & 430.7 & \textbf{291.4} & 849.7 & \textbf{593.1} \\
+Random & 67.0 & \textbf{57.8} & 233.9 & \textbf{169.9} & 484.7 & \textbf{357.2} & 974.9 & \textbf{722.7} & 1963.5 & \textbf{1463.9} \\
+GHZ & 10.4 & \textbf{8.6} & 40.8 & \textbf{33.5} & 85.4 & \textbf{70.4} & 173.5 & \textbf{143.5} & 351.1 & \textbf{290.2} \\
+VQE & 84.7 & \textbf{76.9} & 259.0 & \textbf{176.9} & 509.5 & \textbf{361.0} & 1027.9 & \textbf{738.1} & 2050.3 & \textbf{1473.9} \\
+\hline
+\end{tabular}%
+}
+\label{tab:main_results}
+\end{table}
 
 
 \subsection{I/O Breakdown without Compression}
@@ -133,7 +133,7 @@ Since the 256 GB physical NVMe SSD on the Jetson platform cannot accommodate sta
 
 \noindent\textbf{Storage Footprint Reduction.} Figure~\ref{fig:eff_footprint} compares logical state vector size with the on-disk footprint of the dual-file ping-pong layout. As qubit count grows from 34Q to 39Q, the logical footprint expands from 128 GB to 4 TB (32$\times$), while the ping-pong footprint scales from 1.00 GB to 32.13 GB. Each backing file occupies half of this footprint (e.g., 16.07 GB at 39Q), corresponding to a per-file LZ4 compression ratio of 254$\times$ to 256$\times$ across all qubit counts. This ratio indicates stable compression efficiency as the state vector grows. The dual-file layout doubles on-disk usage to ensure atomic per-layer updates, yielding an effective storage reduction of 128$\times$ relative to the logical size. Note that this 128$\times$ metric reflects on-disk footprint with both backing files coexisting, whereas the per-direction I/O volume during execution scales with a single file at the full 256$\times$ per-file ratio. As a result, \EdgeQuantum fits a 39-qubit simulation (4 TB logical) within 32 GB of NVMe storage, below the 256 GB SSD budget, whereas a raw representation exceeds capacity by 2$\times$ at 36Q and 16$\times$ at 39Q.
 
-\noindent\textbf{Performance Benefit.} Figure~\ref{fig:eff_speedup} compares per-circuit simulation time of \EdgeQuantum with and without LZ4 compression at 34Q. Compression yields a tightly clustered 4.41$\times$-4.74$\times$ speedup across all six circuit types, with the largest gain on QSVM (593.1s $\rightarrow$ 125.0s, 4.74$\times$) and the smallest on Random (1463.9s $\rightarrow$ 332.1s, 4.41$\times$). This speedup arises because the 256$\times$ LZ4 ratio reduces I/O volume between UVM and NVMe, transforming an I/O-bound workload into one dominated by compression and decompression overhead. At 34Q, all circuits become heavily I/O-bound regardless of compute density, so compression delivers uniform speedup across the workload set. The asynchronous pipeline alone capped GHZ at 1.21$\times$ (Section~\ref{4.2}) because its narrow compute window limited write-latency overlap; compression bypasses this dependence by reducing I/O volume directly.
+\noindent\textbf{Performance Benefit.} Figure~\ref{fig:eff_speedup} compares per-circuit simulation time of \EdgeQuantum with and without LZ4 compression at 34Q. Compression yields a tightly clustered 4.41$\times$-4.74$\times$ speedup across all six circuit types, with the largest gain on QSVM (593.1s $\rightarrow$ 125.0s, 4.74$\times$) and the smallest on Random (1463.9s $\rightarrow$ 332.1s, 4.41$\times$). This speedup arises because the 256$\times$ LZ4 ratio reduces I/O volume between UVM and NVMe and transforms an I/O-bound workload into one dominated by compression and decompression overhead. At 34Q, all circuits become heavily I/O-bound regardless of compute density, so compression delivers uniform speedup across the workload set. The asynchronous pipeline alone capped GHZ at 1.21$\times$ (Section~\ref{4.2}) because its narrow compute window limited write-latency overlap. Compression bypasses this dependence by reducing I/O volume directly.
 
 
 
