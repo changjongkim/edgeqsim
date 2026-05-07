@@ -241,7 +241,7 @@ At 32Q, where the working set occupies a moderate fraction of physical memory, 6
 
 \subsection{Fidelity and Stability}
 Since \EdgeQuantum partitions the state vector and relies on frequent I/O, ensuring numerical stability is critical.
-We verified the fidelity of the final state vector against small-scale \textit{cuQuantum} CPU simulations for verifying correctness.
+We verified the fidelity of the final state vector against small-scale \textit{Cirq} CPU simulations for verifying correctness.
 For all circuits up to 30 qubits (where verification is feasible), \EdgeQuantum achieved a fidelity of $1.0 - \epsilon$ (where $\epsilon < 10^{-6}$), confirming that the chunk-based processing and LZ4 compression/decompression cycle preserves numerical precision (single-precision float).
 The successful completion of 151 benchmark runs without a single crash or I/O error validates the robustness of the 4-buffer pipeline and the UVM management logic.
 
