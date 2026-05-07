@@ -245,26 +245,28 @@ We verified the fidelity of the final state vector against small-scale \textit{C
 
 \begin{table}[t]
 \centering
-\caption{State fidelity $F = |\langle\psi_\text{exact}|\psi_\text{lossy}\rangle|^2$ at depth 5 across truncation depths and the maximum qubit count supported in the dual-file ping-pong layout within the 500\,GB SSD at $T=8$. Bold column marks the chosen operating depth.}
+\caption{State fidelity $F = |\langle\psi_\text{exact}|\psi_\text{lossy}\rangle|^2$ at depth 5 and maximum qubit count reachable in the dual-file ping-pong layout within the 500\,GB SSD across truncation depths. Bold $T=8$ columns mark the chosen operating depth.}
 \setlength{\tabcolsep}{4pt}
 \renewcommand{\arraystretch}{1.1}
 \footnotesize
-\begin{tabular}{c|c|c|c|c|c}
+\begin{tabular}{c|cccc|cccc}
 \hline
-\textbf{Circuit} & \textbf{T=10} & \textbf{T=8} & \textbf{T=6} & \textbf{T=4} & \textbf{Max Q @ 500\,GB} \\
+\multirow{2}{*}{\textbf{Circuit}} & \multicolumn{4}{c|}{\textbf{Fidelity $F$}} & \multicolumn{4}{c}{\textbf{Max Q @ 500\,GB}} \\
+\cline{2-9}
+ & \textbf{T=10} & \textbf{T=8} & \textbf{T=6} & \textbf{T=4} & \textbf{T=10} & \textbf{T=8} & \textbf{T=6} & \textbf{T=4} \\
 \hline
-GHZ    & 0.9998 & \textbf{0.9998} & 0.9888 & 0.9453 & 39 \\
-QSVM   & 0.9993 & \textbf{0.9982} & 0.9885 & 0.9553 & 39 \\
-QV     & 0.9970 & \textbf{0.9919} & 0.9453 & 0.7812 & 39 \\
-Random & 0.9965 & \textbf{0.9952} & 0.9544 & 0.8213 & 36 \\
-VQE    & 0.9957 & \textbf{0.9938} & 0.9470 & 0.8114 & 36 \\
-VQC    & 0.9968 & \textbf{0.9983} & 0.9514 & 0.7900 & 36 \\
+GHZ    & 0.9998 & \textbf{0.9998} & 0.9888 & 0.9453 & 39 & \textbf{39} & 39 & 39 \\
+QSVM   & 0.9993 & \textbf{0.9982} & 0.9885 & 0.9553 & 39 & \textbf{39} & 39 & 39 \\
+QV     & 0.9970 & \textbf{0.9919} & 0.9453 & 0.7812 & 38 & \textbf{39} & 39 & 39 \\
+Random & 0.9965 & \textbf{0.9952} & 0.9544 & 0.8213 & 36 & \textbf{36} & 36 & 36 \\
+VQE    & 0.9957 & \textbf{0.9938} & 0.9470 & 0.8114 & 36 & \textbf{36} & 36 & 36 \\
+VQC    & 0.9968 & \textbf{0.9983} & 0.9514 & 0.7900 & 35 & \textbf{36} & 36 & 36 \\
 \hline
 \end{tabular}
 \label{tab:fidelity}
 \end{table}
 
-For all circuits up to 30 qubits (where verification is feasible), Table~\ref{tab:fidelity} reports the measured state fidelity across truncation depths $T \in \{10, 8, 6, 4\}$ at depth 5. At the chosen $T=8$ operating point, fidelity ranges from 0.9919 (QV) to 0.9998 (GHZ), maintaining $F \geq 0.99$ across the six circuits. Lower $T$ values trade fidelity for compression: $T=6$ drops dense circuits to 0.9453--0.9544 and $T=4$ further to 0.78--0.95, while $T=10$ raises all circuits above 0.9957 at the cost of weaker compression (Figure~\ref{fig:eff_ratio}).
+For all circuits up to 30 qubits (where verification is feasible), Table~\ref{tab:fidelity} reports the measured state fidelity and the maximum qubit count reachable on the 500\,GB SSD across truncation depths $T \in \{10, 8, 6, 4\}$ at depth 5. At the chosen $T=8$ operating point, fidelity ranges from 0.9919 (QV) to 0.9998 (GHZ), maintaining $F \geq 0.99$ across the six circuits, and the ping-pong layout supports 39Q for sparse and Clifford-structured circuits (GHZ, QSVM, QV) and 36Q for dense circuits (Random, VQE, VQC). Lower $T$ values trade fidelity for compression ($T=6$ drops dense circuits to 0.9453--0.9544 and $T=4$ further to 0.78--0.95), while $T=10$ raises all circuits above 0.9957 but caps QV at 38Q and VQC at 35Q within the 500\,GB capacity (Figure~\ref{fig:eff_ratio}).
 The successful completion of 151 benchmark runs without a single crash or I/O error validates the robustness of the 4-buffer pipeline and the UVM management logic.
 
 
