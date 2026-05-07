@@ -64,12 +64,12 @@ VQE & 42.4 & \textbf{38.3} & 84.7 & \textbf{76.9} & 259.0 & \textbf{176.9} & 509
 
 
 
-\subsection{I/O Breakdown}
+\subsection{I/O Breakdown without Compression}
 
 \begin{table*}[t]
 \centering
 \tiny
-\caption{Detailed I/O Breakdown (seconds) and Speedup from 32 to 34 Qubits.}
+\caption{I/O Breakdown (seconds) and Speedup from 32 to 34 Qubits.}
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{|c|c|rrrr|rrrr|r|}
 \hline
@@ -168,8 +168,48 @@ Beyond the 34Q regime where the raw state vector fits within the 256 GB SSD, sim
 
 This regime is accessible to \EdgeQuantum because of its UMA-optimized compression path. Server-grade simulators such as BMQSim apply compression at the GPU level, relying on VRAM to stage and compress data. On edge devices, this approach is infeasible. When the logical state vector exceeds the 256 GB SSD capacity ($\geq$35Q), the raw state cannot be persisted on disk, leaving BMQSim with no chunks to stage from storage. Even at smaller scales, dedicating GPU cycles to compression contends with quantum gate kernels for the same compute resource. By performing LZ4 compression on the CPU during the I/O offloading phase, \EdgeQuantum exploits otherwise-idle CPU cores and preserves GPU compute cycles for quantum gate operations. As a result, \EdgeQuantum scales to 4 TB simulations on an 8 GB edge device.
 
+\subsection{I/O Breakdown with Compression}\label{sec:io_breakdown_compressed}
 
-\noindent\textbf{Impact of Buffer Depth.}
+\begin{table}[t]
+\centering
+\caption{I/O breakdown (seconds) for \EdgeQuantum with LZ4 ping-pong compression at 34-36 qubits.}
+\setlength{\tabcolsep}{3pt}
+\scriptsize
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{|c|c|r|r|r|r|r|r|}
+\hline
+\textbf{Qubits} & \textbf{Circuit} & \textbf{pread} & \textbf{decompress} & \textbf{compute} & \textbf{compress} & \textbf{pwrite} & \textbf{Total} \\
+\hline
+\multirow{3}{*}{34Q}
+ & VQC & 0.9 & 226.7 & $\sim$4   & 88.5  & 2.3  & 320.0 \\
+ & GHZ & 0.2 & 45.7  & $\sim$0.5 & 17.2  & 0.8  & 64.1 \\
+ & VQE & 0.9 & 227.0 & $\sim$4   & 90.4  & 2.3  & 321.9 \\
+\hline
+\multirow{3}{*}{35Q}
+ & VQC & 1.8 & 453.3 & $\sim$8   & 186.1 & 4.6  & 648.1 \\
+ & GHZ & 0.3 & 90.9  & $\sim$1.6 & 36.6  & 1.7  & 130.0 \\
+ & VQE & 1.8 & 453.4 & $\sim$8   & 183.5 & 4.5  & 645.5 \\
+\hline
+\multirow{3}{*}{36Q}
+ & VQC & 6.0 & 908.3 & $\sim$13  & 375.1 & 12.5 & 1307.3 \\
+ & GHZ & 0.7 & 181.4 & $\sim$2   & 72.5  & 3.3  & 258.8 \\
+ & VQE & 3.9 & 907.1 & $\sim$12  & 367.9 & 9.4  & 1293.0 \\
+\hline
+\end{tabular}%
+}
+\label{tab:io_breakdown_compressed}
+\end{table}
+
+
+Table~\ref{tab:io_breakdown_compressed} decomposes the execution time of \EdgeQuantum with LZ4 compression into physical I/O, CPU compression, and GPU compute phases across 34 to 36 qubits.
+
+\noindent\textbf{Bottleneck Shift to CPU. }Compression and decompression dominate the total execution time, shifting the primary bottleneck from physical I/O to the CPU.  For 34Q VQC, physical I/O operations (\texttt{pread} and \texttt{pwrite}) account for 3.2s, representing 1.0\% of the 320.0s total execution time. Conversely, CPU-driven LZ4 decompression and compression consume 315.2s, constituting 98.5\% of the total duration. This profile demonstrates that the 256$\times$ data volume reduction eliminates the NVMe bandwidth constraint. The system transitions into a CPU-bound regime where execution time depends primarily on compression throughput, validating the design trade-off introduced in Section~\ref{design_compression}.
+
+\noindent\textbf{Linear Scaling and Task Overlap. }As the logical state vector scales from 34Q to 36Q, the execution phases exhibit stable linear growth without triggering OS-level thrashing or I/O contention. For VQC, CPU decompression time doubles consistently with the state vector volume, scaling from 226.7s (34Q) to 453.3s (35Q) and 908.3s (36Q). Across all scales, GPU compute time remains minimal, requiring only $\sim$4s to $\sim$13s per simulation. Because the CPU compression phase dominates the pipeline by two orders of magnitude, the GPU compute window is fully absorbed by the background offloading tasks. This validates the UMA-optimized compression path. By utilizing otherwise-idle CPU cores for LZ4 processing, \EdgeQuantum extends simulation capacity while maintaining predictable, compute-bound scaling.
+
+
+
+\subsection{Impact of Buffer Depth.}
 Figure~\ref{fig:buffer_impact} shows the impact of UVM buffer count on simulation performance at two contrasting state vector scales: 32Q (32\,GB) and 36Q (512\,GB). Other parameters, such as chunk size (256\,MB) and circuit depth (5), are fixed to isolate the buffer-depth effect. While a single buffer executes sequentially without overlap, increasing the buffer count to 4 yields the best performance at both scales, achieving 1.04$\times$-1.12$\times$ speedup at 32Q and 1.02$\times$-1.08$\times$ speedup at 36Q across all circuits. This confirms that \EdgeQuantum's asynchronous pipeline hides NVMe write latency by overlapping it with GPU computation, as described in Section~\ref{design_pipeline}. However, increasing the buffer count beyond 4 progressively erodes this benefit, and the degradation amplifies as the state vector grows.
 
 At 32Q, where the working set occupies a moderate fraction of physical memory, 6- and 8-buffer configurations remain marginally faster than the 1-buffer baseline (e.g., QV: 267.8\,s and 282.6\,s vs 286.4\,s) but lose the gain achieved at 4 buffers. At 36Q, where the active working set occupies most of the available DRAM, over-allocation pushes the buffer pool beyond the headroom of physical memory, triggering UVM page faults and OS-level thrashing. As a result, the 8-buffer configuration becomes slower than the 1-buffer baseline for several circuits: QSVM (523.2\,s vs 519.6\,s), Random (1190.0\,s vs 1180.5\,s), and GHZ (240.0\,s vs 238.3\,s). This reversal occurs because the additional buffers consume DRAM that would otherwise serve as runtime workspace, and the resulting memory contention outweighs any pipeline benefit. Thus, the 4-buffer choice in \EdgeQuantum's Tiered Mode (Section~\ref{design_pipeline}) sits at the inflection point that maximizes pipeline benefit without exceeding the residency budget, a configuration that remains stable across the 32Q to 36Q scale-up.
