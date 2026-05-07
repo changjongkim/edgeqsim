@@ -108,35 +108,6 @@ Since \EdgeQuantum streams state vector chunks through asynchronous storage I/O 
 \noindent\textbf{Compute.} The compute phase remains nearly identical between the two schemes, differing by at most 10\% and rarely exceeding 1s in absolute terms (e.g., 13.4s vs 12.5s at 34Q VQC). This confirms that the end-to-end speedup originates from the I/O data path rather than the gate-execution path. Both schemes use \textit{cuStateVec} backend, and \EdgeQuantum introduces no additional kernel-level overhead.
 
 
-\subsection{Impact of Buffer Depth}
-Figure~\ref{fig:buffer_impact} shows the impact of UVM buffer count on simulation performance at two contrasting state vector scales: 32Q (32~GB) and 36Q (512~GB). Other parameters, such as chunk size (256~MB) and circuit depth (5), are fixed to isolate the buffer-depth effect. While a single buffer executes sequentially without overlap, increasing the buffer count to 4 yields the best performance at both scales, achieving 1.04$\times$-1.12$\times$ speedup at 32Q and 1.02$\times$-1.08$\times$ speedup at 36Q across all circuits. This confirms that \EdgeQuantum's asynchronous pipeline hides NVMe write latency by overlapping it with GPU computation, as described in Section~\ref{design_pipeline}. However, increasing the buffer count beyond 4 progressively reduces this benefit, and the degradation amplifies as the state vector grows.
-
-At 32Q, where the working set occupies a moderate fraction of physical memory, 6- and 8-buffer configurations remain marginally faster than the 1-buffer baseline but lose the gain achieved at 4 buffers. At 36Q, where the active working set occupies most of the available DRAM, over-allocation pushes the buffer pool beyond the headroom of physical memory, triggering UVM page faults and OS-level thrashing. As a result, the 8-buffer configuration runs approximately 0.7-0.8\% slower than the 1-buffer baseline for QSVM, Random, and GHZ. Thus, the 4-buffer choice in \EdgeQuantum's \textit{Tiered Mode} (Section~\ref{design_pipeline}) provides the highest pipeline benefit with minimal residency cost and remains stable across the 32Q to 36Q scale-up.
-
-
-\begin{figure}[!t]
-    \centering
-    \hspace*{0.09\linewidth}
-    \includegraphics[width=0.6\linewidth]{Figures/lagend_buffers.png}
-    \vspace{-.2cm}
-
-    \subfloat[32 Qubits (32\,GB).]{
-        \includegraphics[width=0.46\linewidth]{Figures/32buffer.png}
-        \label{fig:buffer_32q}
-        \vspace{-.3cm}
-    }
-    \subfloat[36 Qubits (512\,GB).]{
-        \includegraphics[width=0.46\linewidth]{Figures/36buffer.png}
-        \label{fig:buffer_36q}
-        \vspace{-.3cm}
-    }
-    \vspace{-.2cm}
-    \caption{Impact of UVM buffer count on simulation time at two state vector scales.}
-    \vspace{-.2cm}
-    \label{fig:buffer_impact}
-\end{figure}
-
-
 \subsection{Storage Efficiency}
 
 \begin{figure}[t]
@@ -237,6 +208,35 @@ Table~\ref{tab:io_breakdown_compressed} decomposes the execution time of \EdgeQu
 
 \noindent\textbf{Linear Scaling and Task Overlap. }As the logical state vector scales from 34Q to 36Q, the execution phases exhibit stable linear growth without triggering OS-level thrashing or I/O contention. For GHZ, CPU decompression time scales from 44.3s (34Q) to 172.8s (36Q), approximately doubling per qubit increment. Across all scales, GPU compute time remains a small fraction of total runtime, requiring 2.0s to 50.9s per simulation. Because the combined CPU LZ4 phase exceeds GPU compute by over an order of magnitude, the GPU compute window is fully absorbed by the background offloading tasks. This validates the UMA-optimized compression path, which overlaps CPU LZ4 with GPU gate execution on shared DRAM. By utilizing otherwise-idle CPU cores for LZ4 processing, \EdgeQuantum extends simulation capacity while maintaining predictable scaling across both CPU-bound (high-ratio) and I/O-bound (dense) regimes.
 
+
+
+\subsection{Impact of Buffer Depth}
+Figure~\ref{fig:buffer_impact} shows the impact of UVM buffer count on simulation performance at two contrasting state vector scales: 32Q (32~GB) and 36Q (512~GB). Other parameters, such as chunk size (256~MB) and circuit depth (5), are fixed to isolate the buffer-depth effect. While a single buffer executes sequentially without overlap, increasing the buffer count to 4 yields the best performance at both scales, achieving 1.04$\times$-1.12$\times$ speedup at 32Q and 1.02$\times$-1.08$\times$ speedup at 36Q across all circuits. This confirms that \EdgeQuantum's asynchronous pipeline hides NVMe write latency by overlapping it with GPU computation, as described in Section~\ref{design_pipeline}. However, increasing the buffer count beyond 4 progressively reduces this benefit, and the degradation amplifies as the state vector grows.
+
+At 32Q, where the working set occupies a moderate fraction of physical memory, 6- and 8-buffer configurations remain marginally faster than the 1-buffer baseline but lose the gain achieved at 4 buffers. At 36Q, where the active working set occupies most of the available DRAM, over-allocation pushes the buffer pool beyond the headroom of physical memory, triggering UVM page faults and OS-level thrashing. As a result, the 8-buffer configuration runs approximately 0.7-0.8\% slower than the 1-buffer baseline for QSVM, Random, and GHZ. Thus, the 4-buffer choice in \EdgeQuantum's \textit{Tiered Mode} (Section~\ref{design_pipeline}) provides the highest pipeline benefit with minimal residency cost and remains stable across the 32Q to 36Q scale-up.
+
+
+\begin{figure}[!t]
+    \centering
+    \hspace*{0.09\linewidth}
+    \includegraphics[width=0.6\linewidth]{Figures/lagend_buffers.png}
+    \vspace{-.2cm}
+
+    \subfloat[32 Qubits (32\,GB).]{
+        \includegraphics[width=0.46\linewidth]{Figures/32buffer.png}
+        \label{fig:buffer_32q}
+        \vspace{-.3cm}
+    }
+    \subfloat[36 Qubits (512\,GB).]{
+        \includegraphics[width=0.46\linewidth]{Figures/36buffer.png}
+        \label{fig:buffer_36q}
+        \vspace{-.3cm}
+    }
+    \vspace{-.2cm}
+    \caption{Impact of UVM buffer count on simulation time at two state vector scales.}
+    \vspace{-.2cm}
+    \label{fig:buffer_impact}
+\end{figure}
 
 
 \subsection{Fidelity and Stability}
