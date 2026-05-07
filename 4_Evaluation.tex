@@ -108,6 +108,35 @@ Since \EdgeQuantum streams state vector chunks through asynchronous storage I/O 
 \noindent\textbf{Compute.} The compute phase remains nearly identical between the two schemes, differing by at most 10\% and rarely exceeding 1s in absolute terms (e.g., 13.4s vs 12.5s at 34Q VQC). This confirms that the end-to-end speedup originates from the I/O data path rather than the gate-execution path. Both schemes use \textit{cuStateVec} backend, and \EdgeQuantum introduces no additional kernel-level overhead.
 
 
+\subsection{Impact of Buffer Depth}
+Figure~\ref{fig:buffer_impact} shows the impact of UVM buffer count on simulation performance at two contrasting state vector scales: 32Q (32~GB) and 36Q (512~GB). Other parameters, such as chunk size (256~MB) and circuit depth (5), are fixed to isolate the buffer-depth effect. While a single buffer executes sequentially without overlap, increasing the buffer count to 4 yields the best performance at both scales, achieving 1.04$\times$-1.12$\times$ speedup at 32Q and 1.02$\times$-1.08$\times$ speedup at 36Q across all circuits. This confirms that \EdgeQuantum's asynchronous pipeline hides NVMe write latency by overlapping it with GPU computation, as described in Section~\ref{design_pipeline}. However, increasing the buffer count beyond 4 progressively reduces this benefit, and the degradation amplifies as the state vector grows.
+
+At 32Q, where the working set occupies a moderate fraction of physical memory, 6- and 8-buffer configurations remain marginally faster than the 1-buffer baseline but lose the gain achieved at 4 buffers. At 36Q, where the active working set occupies most of the available DRAM, over-allocation pushes the buffer pool beyond the headroom of physical memory, triggering UVM page faults and OS-level thrashing. As a result, the 8-buffer configuration runs approximately 0.7-0.8\% slower than the 1-buffer baseline for QSVM, Random, and GHZ. Thus, the 4-buffer choice in \EdgeQuantum's \textit{Tiered Mode} (Section~\ref{design_pipeline}) provides the highest pipeline benefit with minimal residency cost and remains stable across the 32Q to 36Q scale-up.
+
+
+\begin{figure}[!t]
+    \centering
+    \hspace*{0.09\linewidth}
+    \includegraphics[width=0.6\linewidth]{Figures/lagend_buffers.png}
+    \vspace{-.2cm}
+
+    \subfloat[32 Qubits (32\,GB).]{
+        \includegraphics[width=0.46\linewidth]{Figures/32buffer.png}
+        \label{fig:buffer_32q}
+        \vspace{-.3cm}
+    }
+    \subfloat[36 Qubits (512\,GB).]{
+        \includegraphics[width=0.46\linewidth]{Figures/36buffer.png}
+        \label{fig:buffer_36q}
+        \vspace{-.3cm}
+    }
+    \vspace{-.2cm}
+    \caption{Impact of UVM buffer count on simulation time at two state vector scales.}
+    \vspace{-.2cm}
+    \label{fig:buffer_impact}
+\end{figure}
+
+
 \subsection{Storage Efficiency}
 
 \begin{figure}[t]
@@ -129,10 +158,10 @@ Since \EdgeQuantum streams state vector chunks through asynchronous storage I/O 
 
 Since the 500GB physical NVMe SSD on the Jetson platform cannot accommodate raw state vectors beyond 35 qubits in the dual-file ping-pong layout, \EdgeQuantum uses ping-pong mantissa-truncated LZ4 compression to extend simulation capacity. Figure~\ref{fig:storage_eff} reports two measurements. Figure~\ref{fig:eff_ratio} shows per-circuit compression ratio across the LZ4 baseline and four mantissa truncation depths. Figure~\ref{fig:eff_speedup} shows per-circuit speedup at 34Q, where uncompressed state vectors dominate I/O time.
 
-\noindent\textbf{Compression Ratio Sweep.} Figure~\ref{fig:eff_ratio} compares per-circuit compression ratios across the LZ4 baseline and four mantissa truncation depths. As truncation depth decreases from $T=10$ to $T=6$, the QV ratio expands from 16.2$\times$ to 44.7$\times$, while the VQC ratio scales from 1.91$\times$ to 2.81$\times$. Each truncation depth zeros the lower mantissa bits before LZ4, corresponding to per-file ratios from 2.81$\times$ (VQC) to 255$\times$ (GHZ) at $T=6$ across the six circuits. The byte shuffle groups same-position bytes across amplitudes to expose zero-runs in the truncated lower bytes, yielding ratios above the LZ4-only baseline by up to 9$\times$ for QV. The $T=6$ point reflects compression saturation, whereas $T=4$ reduces the ratio for QV (44.7$\times$$\rightarrow$38.0$\times$) and Random (3.74$\times$$\rightarrow$3.66$\times$). Thus, \EdgeQuantum fits a 39-qubit GHZ simulation within 32GB of NVMe storage at $T=6$, whereas dense circuits achieve per-file compression of 2.81$\times$-3.74$\times$ that supports up to 37 qubits within the 500GB capacity.
+\noindent\textbf{Compression Ratio Sweep.} Figure~\ref{fig:eff_ratio} compares per-circuit compression ratios across the LZ4 baseline and four mantissa truncation depths. As truncation depth decreases from $T=10$ to $T=6$, the QV ratio expands from 16.2$\times$ to 44.7$\times$, while the VQC ratio scales from 1.91$\times$ to 2.81$\times$. Each truncation depth zeros the lower mantissa bits before LZ4, corresponding to per-file ratios from 2.81$\times$ (VQC) to 255$\times$ (GHZ) at $T=6$ across the six circuits. The byte shuffle groups same-position bytes across amplitudes to expose zero-runs in the truncated lower bytes, yielding ratios above the LZ4-only baseline by up to 9$\times$ for QV. The $T=6$ point reflects compression saturation, whereas $T=4$ reduces the ratio for QV (44.7$\times$$\rightarrow$38.0$\times$) and Random (3.74$\times$$\rightarrow$3.66$\times$). Thus, \EdgeQuantum fits a 39-qubit GHZ simulation within 32GB of NVMe storage at $T=6$, whereas dense circuits achieve per-file compression of 2.81$\times$-3.74$\times$ that supports up to 36 qubits within the 500GB capacity.
 
 
-\noindent\textbf{Performance Benefit.} Figure~\ref{fig:eff_speedup} compares per-circuit simulation time of \EdgeQuantum with and without mantissa-truncated LZ4 compression at 34Q. Compression yields a 2.02$\times$-4.59$\times$ speedup across the six circuit types, with the largest gain on GHZ (290.2s $\rightarrow$ 63.3s, 4.59$\times$) and the smallest on VQC (1483.8s $\rightarrow$ 733.5s, 2.02$\times$). This range arises because the per-circuit compression ratio determines I/O reduction between UVM and NVMe, and high-ratio circuits (GHZ 255$\times$, QSVM 215$\times$, QV 44.7$\times$) transition into a regime dominated by compression and decompression overhead while dense circuits (VQC 2.81$\times$, Random 3.74$\times$) remain partially I/O-bound. At 34Q, all circuits start heavily I/O-bound regardless of compute density, so compression delivers speedup proportional to the I/O reduction it provides. The asynchronous pipeline alone capped GHZ at 1.21$\times$ (Section~\ref{4.2}) because its narrow compute window limited write-latency overlap. Compression bypasses this compute-window dependence by reducing I/O volume directly, so GHZ achieves a 4.59$\times$ speedup that matches the high-ratio circuits (QSVM 4.57$\times$, QV 4.30$\times$) and exceeds the dense circuits (2.02$\times$-2.35$\times$).
+\noindent\textbf{Performance Benefit.} Figure~\ref{fig:eff_speedup} compares per-circuit simulation time of \EdgeQuantum with and without mantissa-truncated LZ4 compression at 34Q, isolating the compression speedup from capacity necessity since the raw state vector still fits the 500GB SSD without compression. Compression yields a 2.02$\times$-4.59$\times$ speedup across the six circuit types, with the largest gain on GHZ (290.2s $\rightarrow$ 63.3s, 4.59$\times$) and the smallest on VQC (1483.8s $\rightarrow$ 733.5s, 2.02$\times$). This range arises because the per-circuit compression ratio determines I/O reduction between UVM and NVMe, and high-ratio circuits (GHZ 255$\times$, QSVM 215$\times$, QV 44.7$\times$) transition into a regime dominated by compression and decompression overhead while dense circuits (VQC 2.81$\times$, Random 3.74$\times$) remain partially I/O-bound. At 34Q, all circuits start heavily I/O-bound regardless of compute density, so compression delivers speedup proportional to the I/O reduction it provides. The asynchronous pipeline alone capped GHZ at 1.21$\times$ (Section~\ref{4.2}) because its narrow compute window limited write-latency overlap. Compression bypasses this compute-window dependence by reducing I/O volume directly, so GHZ achieves a 4.59$\times$ speedup that matches the high-ratio circuits (QSVM 4.57$\times$, QV 4.30$\times$) and exceeds the dense circuits (2.02$\times$-2.35$\times$).
 
 
 
@@ -164,7 +193,7 @@ VQC    & 1,384.00 & 2,817.50 & --- & --- & --- \\
 
 Beyond 34 qubits, the logical state vector exceeds the 500GB SSD capacity by up to 8$\times$ (4TB at 39Q). This makes the mantissa-truncated LZ4 ping-pong compression layer mandatory for execution, enabling \EdgeQuantum to operate where alternative simulators fail. Table~\ref{tab:extreme_results} shows the per-circuit simulation times across 35Q (256GB) to 39Q (4TB).
 
-As shown in the table, \EdgeQuantum exhibits stable, near-linear scalability as the state vector doubles at each qubit increment. For high-ratio circuits (GHZ, QSVM, QV), runtime tracks the 16$\times$ data volume growth, increasing 15.8$\times$$-$16.6$\times$ from 119.1s$-$633.0s at 35Q to 1,980.2s$-$10,520.6s at 39Q (e.g., 10,520.6s or $\approx$2.92 hours for QV). Dense circuits stop at 36Q within the 500GB capacity, with Random, VQE, and VQC completing 36Q in 2,373.3s, 2,510.3s, and 2,817.5s, respectively. This near 2$\times$ time growth per qubit confirms that the ping-pong pipeline maintains compression throughput at the 4~TB scale without degradation from queue contention or fragmentation.
+As shown in the table, \EdgeQuantum exhibits stable, near-linear scalability as the state vector doubles at each qubit increment. For high-ratio circuits (GHZ, QSVM, QV), runtime tracks the 16$\times$ data volume growth, increasing 15.8$\times$$-$16.6$\times$ from 119.1s$-$633.0s at 35Q to 1,980.2s$-$10,520.6s at 39Q (e.g., 10,520.6s or $\approx$2.92 hours for QV). Dense circuits stop at 36Q within the 500GB capacity, with Random, VQE, and VQC completing 36Q in 2,373.3s, 2,510.3s, and 2,817.5s, respectively. This near 2$\times$ time growth per qubit confirms that the ping-pong pipeline maintains compression throughput at the 4~TB scale for high-ratio circuits without degradation from queue contention or fragmentation.
 
 This regime is accessible to \EdgeQuantum because of its UMA-optimized compression path. Server-grade simulators such as \textit{BMQSim} apply compression at the GPU level, relying on VRAM to stage and compress data, which is infeasible on edge devices. When the logical state vector reaches or exceeds the 500GB SSD capacity in the ping-pong layout ($\geq$35Q), the raw state cannot be persisted on disk, leaving \textit{BMQSim-like} with no chunks to stage from storage. Even at smaller scales, dedicating GPU cycles to compression contends with quantum gate kernels for the same compute resources. By performing mantissa-truncated LZ4 compression on the CPU during the I/O offloading phase, \EdgeQuantum exploits otherwise idle CPU cores and preserves GPU compute cycles for quantum gate operations. Among the three baselines defined in Section\ref{setup}, \textit{cuQuantum} variants fail at 29Q because of DRAM exhaustion, and \textit{BMQSim-like} cannot start beyond 34Q because of SSD exhaustion, leaving \EdgeQuantum as the only framework to reach the 4TB regime on this 8GB device.
 
@@ -204,39 +233,10 @@ This regime is accessible to \EdgeQuantum because of its UMA-optimized compressi
 
 Table~\ref{tab:io_breakdown_compressed} decomposes the execution time of \EdgeQuantum with LZ4 compression into physical I/O, CPU compression, and GPU compute phases across 34 to 36 qubits.
 
-Compression and decompression dominate the total execution time for high-ratio circuits, shifting the primary bottleneck from physical I/O to the CPU. For 34Q GHZ ($R=255\times$), physical I/O operations (\texttt{pread} and \texttt{pwrite}) account for 1.3s, representing 2.1\% of the 63.3s total execution time. Conversely, CPU-driven LZ4 decompression and compression consume 60.0s, constituting 94.8\% of the total duration. This profile demonstrates that the 255$\times$ data volume reduction eliminates the NVMe bandwidth constraint. The system transitions into a CPU-bound regime where execution time depends primarily on compression throughput, validating the design trade-off introduced in Section~\ref{design_compression}.
+\noindent\textbf{Bottleneck Shift for High-Ratio Circuits. }Compression and decompression dominate the total execution time for high-ratio circuits, shifting the primary bottleneck from physical I/O to the CPU. For 34Q GHZ ($R=255\times$), physical I/O operations (\texttt{pread} and \texttt{pwrite}) account for 1.3s, representing 2.1\% of the 63.3s total execution time. Conversely, CPU-driven LZ4 decompression and compression consume 60.0s, constituting 94.8\% of the total duration. This profile demonstrates that the 255$\times$ data volume reduction eliminates the NVMe bandwidth constraint. The system transitions into a CPU-bound regime where execution time depends primarily on compression throughput, validating the design trade-off introduced in Section~\ref{design_compression}.
 
-\noindent\textbf{Linear Scaling and Task Overlap. }As the logical state vector scales from 34Q to 36Q, the execution phases exhibit stable linear growth without triggering OS-level thrashing or I/O contention. For VQC, CPU decompression time scales from 226.9s (34Q) to 856.7s (36Q), approximately doubling per qubit increment. Across all scales, GPU compute time remains a small fraction of total runtime, requiring 2.0s to 50.9s per simulation. Because the combined CPU LZ4 phase exceeds GPU compute by over an order of magnitude, the GPU compute window is fully absorbed by the background offloading tasks. This validates the UMA-optimized compression path, which overlaps CPU LZ4 with GPU gate execution on shared DRAM. By utilizing otherwise-idle CPU cores for LZ4 processing, \EdgeQuantum extends simulation capacity while maintaining predictable scaling across both CPU-bound (high-ratio) and I/O-bound (dense) regimes.
+\noindent\textbf{Linear Scaling and Task Overlap. }As the logical state vector scales from 34Q to 36Q, the execution phases exhibit stable linear growth without triggering OS-level thrashing or I/O contention. For GHZ, CPU decompression time scales from 44.3s (34Q) to 172.8s (36Q), approximately doubling per qubit increment. Across all scales, GPU compute time remains a small fraction of total runtime, requiring 2.0s to 50.9s per simulation. Because the combined CPU LZ4 phase exceeds GPU compute by over an order of magnitude, the GPU compute window is fully absorbed by the background offloading tasks. This validates the UMA-optimized compression path, which overlaps CPU LZ4 with GPU gate execution on shared DRAM. By utilizing otherwise-idle CPU cores for LZ4 processing, \EdgeQuantum extends simulation capacity while maintaining predictable scaling across both CPU-bound (high-ratio) and I/O-bound (dense) regimes.
 
-
-
-\subsection{Impact of Buffer Depth}
-Figure~\ref{fig:buffer_impact} shows the impact of UVM buffer count on simulation performance at two contrasting state vector scales: 32Q (32~GB) and 36Q (512~GB). Other parameters, such as chunk size (256~MB) and circuit depth (5), are fixed to isolate the buffer-depth effect. While a single buffer executes sequentially without overlap, increasing the buffer count to 4 yields the best performance at both scales, achieving 1.04$\times$-1.12$\times$ speedup at 32Q and 1.02$\times$-1.08$\times$ speedup at 36Q across all circuits. This confirms that \EdgeQuantum's asynchronous pipeline hides NVMe write latency by overlapping it with GPU computation, as described in Section~\ref{design_pipeline}. However, increasing the buffer count beyond 4 progressively reduces this benefit, and the degradation amplifies as the state vector grows.
-
-At 32Q, where the working set occupies a moderate fraction of physical memory, 6- and 8-buffer configurations remain marginally faster than the 1-buffer baseline but lose the gain achieved at 4 buffers. At 36Q, where the active working set occupies most of the available DRAM, over-allocation pushes the buffer pool beyond the headroom of physical memory, triggering UVM page faults and OS-level thrashing. As a result, the 8-buffer configuration runs approximately 0.7-0.8\% slower than the 1-buffer baseline for QSVM, Random, and GHZ. Thus, the 4-buffer choice in \EdgeQuantum's \textit{Tiered Mode} (Section~\ref{design_pipeline}) provides the highest pipeline benefit with minimal residency cost and remains stable across the 32Q to 36Q scale-up.
-
-
-\begin{figure}[!t]
-    \centering
-    \hspace*{0.09\linewidth}
-    \includegraphics[width=0.6\linewidth]{Figures/lagend_buffers.png}
-    \vspace{-.2cm}
-
-    \subfloat[32 Qubits (32\,GB).]{
-        \includegraphics[width=0.46\linewidth]{Figures/32buffer.png}
-        \label{fig:buffer_32q}
-        \vspace{-.3cm}
-    }
-    \subfloat[36 Qubits (512\,GB).]{
-        \includegraphics[width=0.46\linewidth]{Figures/36buffer.png}
-        \label{fig:buffer_36q}
-        \vspace{-.3cm}
-    }
-    \vspace{-.2cm}
-    \caption{Impact of UVM buffer count on simulation time at two state vector scales.}
-    \vspace{-.2cm}
-    \label{fig:buffer_impact}
-\end{figure}
 
 
 \subsection{Fidelity and Stability}
