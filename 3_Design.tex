@@ -37,7 +37,7 @@ In \textit{Tiered Mode}, \EdgeQuantum employs a 4-buffer UVM pipeline that estab
     \centering
     % Ensure you have this file or use a placeholder
     \includegraphics[width=0.89\columnwidth]{Figures/test_uvm.png}
-    \caption{Data path comparison. (Top) Existing execution requires explicit \texttt{cudaMemcpy}, doubling memory usage and causing severe bandwidth bottlenecks. (Bottom) \EdgeQuantum leverages UVM and \texttt{O\_DIRECT} to achieve zero-copy execution on UMA, transferring ownership via MMU pointer switches without physical data migration.}
+    \caption{Data path comparison. (Top) Existing execution. (Bottom) \EdgeQuantum's zero-copy execution on UMA.}
     \label{uvm_diff}
 \end{figure}
 
@@ -60,7 +60,7 @@ A fundamental challenge in edge computing is bridging the gap between GPU execut
     \centering
     % Ensure you have this file or use a placeholder
     \includegraphics[width=0.89\columnwidth]{Figures/edge_design3.3.png}
-    \caption{Execution timeline of the asynchronous pipeline. The I/O serialization barrier (dotted line) strictly separates reads and writes to prevent NVMe bandwidth contention, while GPU computation perfectly overlaps with background storage eviction.}
+    \caption{Execution timeline of the asynchronous pipeline. The dotted line marks the I/O serialization barrier.}
     \label{design_3.3}
 \end{figure}
 
