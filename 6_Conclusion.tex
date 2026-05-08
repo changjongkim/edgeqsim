@@ -1,9 +1,7 @@
 \section{Conclusion}
 \label{sec:conclusion}
 
-In this paper, we propose \EdgeQuantum, a scalable tiered-memory simulation framework that treats NVMe storage as a seamless extension of GPU memory  through UMA-aware zero-copy data management, a 4-buffer asynchronous pipeline for I/O serialization and an adaptive mantissa-truncated LZ4 ping-pong compression strategy for maximized storage capacity.
-Our evaluations across various quantum circuits and scales show that \EdgeQuantum achieves up to 1.48$\times$ speedup over blocking I/O baselines without compression and up to 4.59$\times$ with mantissa-truncated LZ4 compression, supports full state vector simulations up to 39 qubits (4~TB) on an 8~GB NVIDIA Jetson Orin Nano with up to 512$\times$ logical capacity expansion beyond DRAM, and successfully executes complex circuits such as 39-qubit Quantum Volume. 
-These results demonstrate that \EdgeQuantum effectively addresses the memory wall of edge computing, offering a scalable and practical solution for ubiquitous and decentralized quantum circuit simulation.
+In this paper, we propose \EdgeQuantum, a scalable tiered-memory simulation framework for full state vector quantum simulation on resource-constrained edge devices. By coordinating UMA-aware zero-copy data movement with asynchronous I/O serialization and mantissa-truncated LZ4 ping-pong compression, we mask NVMe bottlenecks and extend simulation capacity beyond physical DRAM. We evaluate \EdgeQuantum on an 8~GB NVIDIA Jetson Orin Nano, achieving up to 4.59$\times$ speedup over blocking I/O baselines and supporting full state vector simulation up to 39 qubits (4~TB), a 512$\times$ logical capacity expansion beyond DRAM.
 
 \begin{comment}
  In this paper, we observe that existing quantum circuit simulators on edge devices are severely limited by physical memory capacity and the high latency of commodity storage, making large-scale simulation impossible.
