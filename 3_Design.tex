@@ -9,8 +9,9 @@
 \begin{figure}[t]
     \centering
     % Ensure you have this file or use a placeholder
-    \includegraphics[width=0.89\columnwidth]{Figures/architecture_edge.png}
+    \includegraphics[width=0.85\columnwidth]{Figures/architecture_edge.png}
     \caption{Overall architecture of \EdgeQuantum.}
+        \vspace{-.2cm}
     \label{overall_architecture}
 \end{figure}
 
@@ -33,20 +34,21 @@ In \textit{Tiered Mode}, \EdgeQuantum employs a 4-buffer UVM pipeline that estab
 \subsection{Tiered Memory Architecture with UVM}
 \label{design_memory}
 
-\begin{figure}[t]
-    \centering
-    % Ensure you have this file or use a placeholder
-    \includegraphics[width=0.89\columnwidth]{Figures/test_uvm.png}
-    \caption{Data path comparison. (Top) Existing execution. (Bottom) \EdgeQuantum's zero-copy execution on UMA.}
-    \label{uvm_diff}
-\end{figure}
-
 
 
 A fundamental challenge in edge out-of-core simulation is the redundant host-to-device copies imposed by standard CUDA frameworks. On NVIDIA Jetson platforms, the CPU and GPU share a DRAM pool under UMA, enabling zero-copy data paths. Figure~\ref{uvm_diff} shows how \EdgeQuantum leverages UMA via UVM visibility control to establish an efficient data path.
 
 \noindent\textbf{Existing Storage-backed Execution. }Despite the shared DRAM on UMA platforms, existing quantum simulation frameworks rely on standard device memory allocation models. As shown at the top of Figure~\ref{uvm_diff}, using standard device memory allocation (e.g., \texttt{cudaMalloc}) enforces a logical separation between host and device memory spaces. When retrieving state vector chunks from storage, POSIX I/O system calls (e.g., \texttt{pread}) cannot perform Direct Memory Access (DMA) into device memory. The system stages the data in an intermediate host-side buffer, followed by an explicit \texttt{cudaMemcpy} (H2D). This data path has two limitations for resource-constrained edge devices. First, it doubles the physical memory footprint (2$\times$ Memory constraint). Second, the additional memory copy operation saturates memory bandwidth and reduces simulation throughput.
 
+
+\begin{figure}[t]
+    \centering
+    % Ensure you have this file or use a placeholder
+    \includegraphics[width=0.85\columnwidth]{Figures/test_uvm.png}
+    \caption{Data path comparison. (Top) Existing execution. (Bottom) \EdgeQuantum's zero-copy execution on UMA.}
+    \vspace{-.2cm}
+    \label{uvm_diff}
+\end{figure}
 
 \noindent\textbf{Zero-copy Execution for UMA. }To remove this bottleneck, \EdgeQuantum designs a zero-copy data path by controlling the visibility of UVM at the OS and driver level. As shown at the bottom of Figure~\ref{uvm_diff}, \EdgeQuantum allocates simulation buffers using \texttt{cudaMallocManaged} with the \texttt{cudaMemAttachHost} flag. This flag maps physical pages into the CPU page tables. With CPU-side visibility, \EdgeQuantum performs \texttt{O\_DIRECT} file operations, streaming state vector chunks directly into the UVM ring buffer while bypassing the Linux page cache and avoiding memory pollution. Before quantum gate execution, \EdgeQuantum issues a \texttt{cudaStreamAttachMemAsync} with \texttt{cudaMemAttachGlobal} flag. This asynchronous operation updates the GPU Memory Management Unit (MMU) page tables without data migration and transfers ownership of the physical DRAM pages to \textit{GPU Compute Engine}. By managing these UVM visibility transitions within a ring-buffer structure, \EdgeQuantum ensures that active data residency remains within physical DRAM limits, thereby preventing OS-level thrashing and removing explicit memory copies.
 
@@ -56,14 +58,6 @@ A fundamental challenge in edge out-of-core simulation is the redundant host-to-
 \label{design_pipeline}
 
 
-\begin{figure}[t]
-    \centering
-    % Ensure you have this file or use a placeholder
-    \includegraphics[width=0.89\columnwidth]{Figures/edge_design3.3.png}
-    \caption{Execution timeline of the asynchronous pipeline. The dotted line marks the I/O serialization barrier.}
-    \label{design_3.3}
-\end{figure}
-
 
 %The primary performance bottleneck in out-of-core quantum simulation on edge devices is the asymmetric I/O latency of commodity NVMe SSDs. While sequential reads sustain 1.38~GB/s, writes are limited to 1.0~GB/s (Section~\ref{back2}). Traditional out-of-core simulators issue concurrent asynchronous reads and writes without considering this asymmetry. This bidirectional I/O causes NVMe controller contention and degrades throughput. To mitigate this hardware limitation, \EdgeQuantum implements an asynchronous pipeline governed by an \textit{I/O Serialization Policy}. 
 
@@ -71,17 +65,26 @@ The primary bottleneck in out-of-core quantum simulation on edge devices is the 
 
 \noindent\textbf{Pipeline Architecture.} Figure~\ref{design_3.3} shows the execution timeline of the asynchronous pipeline. The core design principle is to isolate I/O directions to preserve NVMe bandwidth while overlapping them with independent GPU computation. This isolation is enforced by an I/O serialization barrier, ensuring a new read is blocked until the preceding write completes. This 4-buffer configuration is selected based on the latency relationship between NVMe writes ($T_{write} \approx 256$ms for a 256 MB chunk at the measured 1.0 GB/s) and the combined read-compute window ($T_{read} + T_{compute}$). We adopt a 4-buffer depth to provide headroom against write-latency variability, ensuring a free UVM ring buffer is available for the next $T_{read}$ phase. Driven by this policy, \EdgeQuantum processes state vector chunk $k$ through the following sequence:
 
-\begin{enumerate}
-\item \textbf{I/O Serialization Barrier:} To avoid bidirectional I/O contention, the host CPU halts at a synchronization barrier until the background \texttt{pwrite} of an earlier chunk (e.g., chunk $k-2$) completes. This stalling prevents the OS block layer from mixing read and write queues and ensures background write operations do not trigger NVMe garbage collection that would delay the subsequent read.
+\begin{figure}[t]
+    \centering
+    % Ensure you have this file or use a placeholder
+    \includegraphics[width=0.85\columnwidth]{Figures/edge_design3.3.png}
+    \caption{Execution timeline of the asynchronous pipeline. The dotted line marks the I/O serialization barrier.}
+    \vspace{-.2cm}
+    \label{design_3.3}
+\end{figure}
 
+
+\begin{enumerate}
+\item \textbf{I/O Serialization Barrier:} To avoid bidirectional I/O contention, the CPU halts at a barrier until the background \texttt{pwrite} of an earlier chunk (e.g., $k-2$) completes. This stalling prevents the OS block layer from mixing read/write queues and avoids triggering NVMe garbage collection that delays the subsequent read.
 \item \textbf{Synchronous Read:} After clearing the barrier, \EdgeQuantum issues a synchronous \texttt{pread} to load chunk $k$ directly into the UVM ring buffer at sequential read bandwidth.
 \item \textbf{Asynchronous Write:} After the read, the framework dispatches a background thread to asynchronously write the previously computed chunk ($k-1$) back to storage.
-\item \textbf{GPU Compute Overlap:} Concurrently with the background write, \textit{GPU Compute Engine} executes gate kernels on chunk $k$. Because the Jetson SoC has independent memory and NVMe controllers, this computation overlaps with the storage write. This hardware-level task separation ensures CPU-intensive I/O and GPU-intensive kernels operate without mutual interference.
+\item \textbf{GPU Compute Overlap:} Concurrently with the background write, \textit{GPU Compute Engine} executes gate kernels on chunk $k$. Because the Jetson SoC has independent memory and NVMe controllers, computation overlaps with the storage write. This hardware-level separation ensures CPU-intensive I/O and GPU-intensive kernels operate without interference.
 \end{enumerate}
-
 By serializing the I/O path and overlapping GPU execution, \EdgeQuantum hides write latency without causing bandwidth contention. 
 
 \noindent\textbf{Cross-Chunk Gate Handling.} Local gates act on amplitudes within a single chunk and are processed within one UVM ring buffer ($q < \log_2(\text{chunk size})$). In contrast, gates targeting qubits beyond the chunk boundary couple amplitudes residing in different chunks, which must be co-resident in memory before invocation. For gates spanning the chunk boundary ($q \geq \log_2(\text{chunk size})$), \EdgeQuantum streams the chunk pair $(c, c \oplus 2^{q-\log_2(\text{chunk size})})$ into two adjacent UVM ring buffers and invokes \textit{cuStateVec} on the paired amplitudes. This pair-wise handling extends to two-global-qubit gates by occupying four ring buffers, matching the 4-buffer depth. Although cross-chunk gates double the per-gate I/O, the asynchronous pipeline overlaps the additional read with GPU compute on the prior pair, preserving throughput characteristics of the local-gate case. Thus, the 4-buffer choice supports both the asynchronous pipeline and cross-chunk gate handling without requiring additional buffers.
+
 
 
 

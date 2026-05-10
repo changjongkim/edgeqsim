@@ -2,13 +2,13 @@
 
 \begin{figure}[t]
     \centering
-    \begin{subfigure}[b]{0.46\columnwidth}
+    \begin{subfigure}[b]{0.44\columnwidth}
         \centering
         \includegraphics[width=\linewidth]{Figures/fig_motivation_a.png}
         \caption{Memory growth.}
         \label{intro_motivation_a}
     \end{subfigure}\hfill
-    \begin{subfigure}[b]{0.50\columnwidth}
+    \begin{subfigure}[b]{0.48\columnwidth}
         \centering
         \includegraphics[width=\linewidth]{Figures/fig_motivation_b.png}
         \caption{VQE latency.}
@@ -31,13 +31,19 @@ Quantum circuit simulation involves trade-offs between scalability and computati
 
 \subsection{Memory Architecture in Edge Computing}\label{back2}
 
+To handle data-intensive applications such as quantum simulation on edge devices, it is necessary to understand the underlying memory architecture. In contrast to HPC clusters that use discrete CPUs and GPUs connected via PCIe, edge devices such as the NVIDIA Jetson Orin Nano use a System-on-Chip (SoC) design with a Unified Memory Architecture (UMA). In this architecture, the CPU and GPU share a single physical DRAM pool, eliminating PCIe data transfers. However, this integrated design introduces bandwidth asymmetry depending on the access path and storage tier.
+
+\noindent\textbf{Unified Memory Architecture. }
+As shown in Figure~\ref{fig:bg_bw_dram}, within LPDDR5 DRAM, GPU-driven and UMA transfers (e.g., GPU D2D, UMA H2D/D2H) deliver about 25~GB/s, whereas host-driven CPU memory copies achieve only 6.0~GB/s. This is a 4$\times$ difference within the same physical memory. Recent studies in large-scale data processing propose out-of-core mechanisms that use a user-space buffer manager to prefetch data and overlap I/O with computation. However, applying these techniques to quantum simulation on unified memory architectures presents challenges. Existing frameworks assume separate memory spaces and rely on host-driven staging. This causes their data movement to be limited by the 6.0~GB/s CPU memcpy rate, failing to exploit the higher UMA bandwidth.
+
+
 \begin{figure}[t]
     \centering
 
     % ===== Figure 1 =====
     \begin{subfigure}[b]{\columnwidth}
         \centering
-        \includegraphics[width=0.8\linewidth]{Figures/edge_back2.png}
+        \includegraphics[width=0.85\linewidth]{Figures/edge_back2.png}
         \caption{Unified DRAM (LPDDR5).}
         \label{fig:bg_bw_dram}
     \end{subfigure}
@@ -47,7 +53,7 @@ Quantum circuit simulation involves trade-offs between scalability and computati
     % ===== Figure 2 =====
     \begin{subfigure}[b]{\columnwidth}
         \centering
-        \includegraphics[width=0.89\linewidth]{Figures/edge_back3.png}
+        \includegraphics[width=0.85\linewidth]{Figures/edge_back3.png}
         \caption{External NVMe SSD.}
         \label{fig:bg_bw_nvme}
     \end{subfigure}
@@ -59,11 +65,6 @@ Quantum circuit simulation involves trade-offs between scalability and computati
 
     \vspace{-0.2cm}
 \end{figure}
-
-To handle data-intensive applications such as quantum simulation on edge devices, it is necessary to understand the underlying memory architecture. In contrast to HPC clusters that use discrete CPUs and GPUs connected via PCIe, edge devices such as the NVIDIA Jetson Orin Nano use a System-on-Chip (SoC) design with a Unified Memory Architecture (UMA). In this architecture, the CPU and GPU share a single physical DRAM pool, eliminating PCIe data transfers. However, this integrated design introduces bandwidth asymmetry depending on the access path and storage tier.
-
-\noindent\textbf{Unified Memory Architecture. }
-As shown in Figure~\ref{fig:bg_bw_dram}, within LPDDR5 DRAM, GPU-driven and UMA transfers (e.g., GPU D2D, UMA H2D/D2H) deliver about 25~GB/s, whereas host-driven CPU memory copies achieve only 6.0~GB/s. This is a 4$\times$ difference within the same physical memory. Recent studies in large-scale data processing propose out-of-core mechanisms that use a user-space buffer manager to prefetch data and overlap I/O with computation. However, applying these techniques to quantum simulation on unified memory architectures presents challenges. Existing frameworks assume separate memory spaces and rely on host-driven staging. This causes their data movement to be limited by the 6.0~GB/s CPU memcpy rate, failing to exploit the higher UMA bandwidth.
 
 \noindent\textbf{External Storage Device. }
 As shown in Figure~\ref{fig:bg_bw_nvme}, when data moves to the external NVMe SSD, bandwidth decreases significantly. Sequential reads and writes provide about 1.38~GB/s and 1.0~GB/s. This is an 18$\times$ reduction compared to UMA transfers. Small-block random accesses reduce bandwidth further to 62~MB/s, which is a 400$\times$ reduction. Existing out-of-core approaches rely on operating system virtual memory management (OS-native swapping) to handle data larger than physical memory. However, the OS memory manager does not consider quantum gate access patterns, where memory stride increases exponentially with the target qubit index. Because this strided access pattern defeats standard OS readahead heuristics, page faults generate small-block storage accesses. This forces the NVMe drive into the random read state, reducing bandwidth to 62~MB/s. Consequently, this gap between the GPU kernel and OS file system leads to I/O thrashing and low GPU utilization. 

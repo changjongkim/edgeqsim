@@ -47,6 +47,8 @@ VQE & 42.4 & \textbf{38.3} & 84.7 & \textbf{76.9} & 259.0 & \textbf{176.9} & 509
 \begin{table}[t]
 \centering
 \caption{Simulation time (in seconds) between \textit{BMQSim-like} (Block) and \EdgeQuantum (Async) without compression.}
+\vspace{-.2cm}
+\scriptsize
 \setlength{\tabcolsep}{3pt}
 \resizebox{\columnwidth}{!}{%
 \begin{tabular}{|l|rr|rr|rr|rr|rr|}
@@ -73,6 +75,8 @@ VQE & 84.7 & \textbf{76.9} & 259.0 & \textbf{176.9} & 509.5 & \textbf{361.0} & 1
 \centering
 \scriptsize
 \caption{I/O Breakdown from 32 to 34 Qubits.}
+\vspace{-.2cm}
+
 \resizebox{\columnwidth}{!}{%
 \begin{tabular}{|c|c|c|rrrr|}
 \hline
@@ -169,6 +173,14 @@ Since \EdgeQuantum streams state vector chunks through asynchronous storage I/O 
 
 \subsection{Storage Efficiency}\label{sec:storage_eff}
 
+
+
+Since the 500GB physical NVMe SSD on the Jetson platform cannot accommodate raw state vectors beyond 35 qubits (256 GB) in the dual-file ping-pong layout, \EdgeQuantum uses ping-pong mantissa-truncated LZ4 compression to extend simulation capacity.
+
+\noindent\textbf{Compression Ratio Sweep.} Figure~\ref{fig:eff_ratio} compares per-circuit compression ratios across the LZ4 baseline and four mantissa truncation depths. As the truncation depth decreases from $T=10$ to $T=8$, compression efficiency improves across all circuits. For example, QV increases from 16.2$\times$ to 32.7$\times$, while VQC increases from 1.91$\times$ to 2.16$\times$. At $T=8$, per-file compression ratios range from 2.16$\times$ to 255$\times$ across the six circuits. Each truncation depth zeros lower mantissa bits, while byte shuffle exposes zero-runs for efficient LZ4 compression. This improves compression ratio by up to 6$\times$ over the LZ4-only baseline. The $T=8$ reflects the chosen operating depth because it balances compression efficiency and numerical fidelity. Although $T=6$ further increases the compression ratio, lower truncation depths also reduce fidelity (Table~\ref{tab:fidelity}). Thus, \EdgeQuantum fits a 39-qubit GHZ simulation within 32GB of NVMe storage at $T=8$, whereas dense circuits achieve 2.16$\times$-2.85$\times$ compression, supporting up to 36 qubits within the 500GB capacity.
+
+\noindent\textbf{Performance Benefit.} Figure~\ref{fig:eff_speedup} compares per-circuit simulation time of \EdgeQuantum with and without mantissa-truncated LZ4 compression at 34Q, isolating compression speedup from capacity necessity because the raw state vector still fits within the 500GB SSD without compression. Compression yields a 1.73$\times$-4.59$\times$ speedup across the six circuit types. GHZ achieves the largest gain at 4.59$\times$, while VQC shows the smallest at 1.73$\times$. This variation arises because the per-circuit compression ratio determines the I/O reduction between UVM and NVMe. High-ratio circuits transition into a regime dominated by compression and decompression overhead, whereas dense circuits remain partially I/O-bound. At 34Q, all circuits begin in a heavily I/O-bound regime regardless of compute density, so compression delivers speedup proportional to the I/O reduction it provides. The asynchronous pipeline alone capped GHZ at 1.21$\times$ (Section~\ref{4.2}) because its narrow compute window limited write-latency overlap. Compression removes this compute-window dependence by reducing I/O volume directly, allowing GHZ, QSVM, and QV to achieve 4.18$\times$-4.59$\times$ speedup, while dense circuits remain within 1.73$\times$-2.04$\times$.
+
 \begin{figure}[t]
     \centering
     \begin{subfigure}[b]{0.45\columnwidth}
@@ -186,14 +198,6 @@ Since \EdgeQuantum streams state vector chunks through asynchronous storage I/O 
 \end{figure}
 
 
-Since the 500GB physical NVMe SSD on the Jetson platform cannot accommodate raw state vectors beyond 35 qubits (256 GB) in the dual-file ping-pong layout, \EdgeQuantum uses ping-pong mantissa-truncated LZ4 compression to extend simulation capacity. Figure~\ref{fig:eff_ratio} shows per-circuit compression ratio across the LZ4 baseline and four mantissa truncation depths. Figure~\ref{fig:eff_speedup} shows per-circuit speedup at 34Q, where uncompressed state vectors dominate I/O time.
-
-\noindent\textbf{Compression Ratio Sweep.} Figure~\ref{fig:eff_ratio} compares per-circuit compression ratios across the LZ4 baseline and four mantissa truncation depths. As the truncation depth decreases from $T=10$ to $T=8$, compression efficiency improves across all circuits. For example, QV increases from 16.2$\times$ to 32.7$\times$, while VQC increases from 1.91$\times$ to 2.16$\times$. At $T=8$, per-file compression ratios range from 2.16$\times$ to 255$\times$ across the six circuits. Each truncation depth zeros lower mantissa bits, while byte shuffle exposes zero-runs for efficient LZ4 compression. This improves compression ratio by up to 6$\times$ over the LZ4-only baseline. The $T=8$ reflects the chosen operating depth because it balances compression efficiency and numerical fidelity. Although $T=6$ further increases the compression ratio, lower truncation depths also reduce fidelity (Table~\ref{tab:fidelity}). Thus, \EdgeQuantum fits a 39-qubit GHZ simulation within 32GB of NVMe storage at $T=8$, whereas dense circuits achieve 2.16$\times$-2.85$\times$ compression, supporting up to 36 qubits within the 500GB capacity.
-
-\noindent\textbf{Performance Benefit.} Figure~\ref{fig:eff_speedup} compares per-circuit simulation time of \EdgeQuantum with and without mantissa-truncated LZ4 compression at 34Q, isolating compression speedup from capacity necessity because the raw state vector still fits within the 500GB SSD without compression. Compression yields a 1.73$\times$-4.59$\times$ speedup across the six circuit types. GHZ achieves the largest gain at 4.59$\times$, while VQC shows the smallest at 1.73$\times$. This variation arises because the per-circuit compression ratio determines the I/O reduction between UVM and NVMe. High-ratio circuits transition into a regime dominated by compression and decompression overhead, whereas dense circuits remain partially I/O-bound. At 34Q, all circuits begin in a heavily I/O-bound regime regardless of compute density, so compression delivers speedup proportional to the I/O reduction it provides. The asynchronous pipeline alone capped GHZ at 1.21$\times$ (Section~\ref{4.2}) because its narrow compute window limited write-latency overlap. Compression removes this compute-window dependence by reducing I/O volume directly, allowing GHZ, QSVM, and QV to achieve 4.18$\times$-4.59$\times$ speedup, while dense circuits remain within 1.73$\times$-2.04$\times$.
-
-
-
 
 \subsection{Extreme Scalability: 35–39 Qubits}
 
@@ -202,6 +206,8 @@ Since the 500GB physical NVMe SSD on the Jetson platform cannot accommodate raw 
 \centering
 \scriptsize
 \caption{Extreme-scale simulation times (seconds) for \EdgeQuantum at $T=8$ (depth 5). Dash: exceeds 500 GB SSD ping-pong capacity.}
+\vspace{-.2cm}
+
 \resizebox{\columnwidth}{!}{%
 \begin{tabular}{|l|r|r|r|r|r|}
 \hline
@@ -231,6 +237,8 @@ As shown in the table, \EdgeQuantum exhibits stable, near-linear scalability as 
 \begin{table}[t]
 \centering
 \caption{I/O breakdown (seconds) for \EdgeQuantum with mantissa-truncated LZ4 ping-pong compression across 34-36 qubits.}
+\vspace{-.2cm}
+
 \setlength{\tabcolsep}{3pt}
 \scriptsize
 \resizebox{\columnwidth}{!}{%
@@ -270,9 +278,9 @@ Table~\ref{tab:io_breakdown_compressed} decomposes the execution time of \EdgeQu
 
 
 \subsection{Impact of Buffer Depth}
-Figure~\ref{fig:buffer_impact} shows the impact of UVM ring buffer count on simulation performance at two state vector scales: 32Q (32~GB) and 36Q (512~GB). Other parameters, including chunk size (256~MB) and circuit depth (5), are fixed to isolate the buffer-depth effect. While a single buffer executes sequentially without overlap, increasing the buffer count to 4 yields the best performance at both scales, achieving 1.04$\times$-1.12$\times$ speedup at 32Q and 1.02$\times$-1.08$\times$ speedup at 36Q across all circuits. These results show that \EdgeQuantum's asynchronous pipeline hides NVMe write latency by overlapping it with GPU computation. However, increasing the buffer count beyond 4 reduces this benefit, and the degradation increases as the state vector grows.
+Figure~\ref{fig:buffer_impact} shows the impact of UVM ring buffer count at two state vector scales: 32Q (32~GB) and 36Q (512~GB). Other parameters (chunk size 256~MB, depth 5) are fixed to isolate the buffer-depth effect. While a single buffer executes sequentially without overlap, 4 buffers yield the best performance at both scales, achieving 1.04$\times$-1.12$\times$ speedup at 32Q and 1.02$\times$-1.08$\times$ at 36Q across all circuits. These results show that \EdgeQuantum's asynchronous pipeline hides NVMe write latency by overlapping with GPU computation. However, increasing the buffer count beyond 4 reduces this benefit, with degradation growing as the state vector scales.
 
-Specifically, at 32Q, where the working set occupies a moderate fraction of physical memory, 6- and 8-buffer configurations remain marginally faster than the 1-buffer baseline but lose the gain achieved at 4 buffers. At 36Q, where the active working set occupies most of the available DRAM, over-allocation pushes the buffer pool beyond physical memory headroom, triggering UVM page faults and OS-level thrashing. Under this condition, the 8-buffer configuration runs approximately 0.7-0.8\% slower than the 1-buffer baseline for QSVM, Random, and GHZ. Thus, the 4-buffer choice in \textit{Tiered Mode} shows the highest pipeline benefit with minimal residency cost and remains stable across the 32Q-36Q scale-up.
+At 32Q, where the working set occupies a moderate fraction of DRAM, 6- and 8-buffer configurations remain marginally faster than the 1-buffer baseline but lose the 4-buffer gain. At 36Q, where the working set occupies most of available DRAM, over-allocation pushes the buffer pool beyond memory headroom, triggering UVM page faults and OS-level thrashing. Under this condition, the 8-buffer configuration runs 0.7-0.8\% slower than the 1-buffer baseline for QSVM, Random, and GHZ. Thus, the 4-buffer choice in \textit{Tiered Mode} shows the highest pipeline benefit with minimal residency cost, remaining stable across the 32Q-36Q scale-up.
 
 \begin{figure}[!t]
     \centering
@@ -281,12 +289,12 @@ Specifically, at 32Q, where the working set occupies a moderate fraction of phys
     \vspace{-.2cm}
 
     \subfloat[32 Qubits (32\,GB).]{
-        \includegraphics[width=0.46\linewidth]{Figures/32buffer.png}
+        \includegraphics[width=0.42\linewidth]{Figures/32buffer.png}
         \label{fig:buffer_32q}
         \vspace{-.3cm}
     }
     \subfloat[36 Qubits (512\,GB).]{
-        \includegraphics[width=0.46\linewidth]{Figures/36buffer.png}
+        \includegraphics[width=0.42\linewidth]{Figures/36buffer.png}
         \label{fig:buffer_36q}
         \vspace{-.3cm}
     }
@@ -302,6 +310,7 @@ Specifically, at 32Q, where the working set occupies a moderate fraction of phys
 \begin{table}[t]
 \centering
 \caption{State fidelity $F = |\langle\psi_\text{exact}|\psi_\text{lossy}\rangle|^2$ and maximum qubit count on the 500 GB SSD across truncation depths $T$ (depth 5). Bold $T=8$: chosen operating depth.}
+\vspace{-.2cm}
 \setlength{\tabcolsep}{4pt}
 \renewcommand{\arraystretch}{1.1}
 \footnotesize
