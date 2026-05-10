@@ -69,6 +69,61 @@ VQE & 84.7 & \textbf{76.9} & 259.0 & \textbf{176.9} & 509.5 & \textbf{361.0} & 1
 
 \subsection{I/O Breakdown without Compression}
 
+\begin{table}[t]
+\centering
+\scriptsize
+\caption{I/O Breakdown from 32 to 34 Qubits.}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{|c|c|c|rrrr|}
+\hline
+\textbf{Qubits} & \textbf{Circuit} & \textbf{Scheme} 
+& \textbf{Read} & \textbf{Comp} & \textbf{Write} & \textbf{Total} \\
+\hline
+\multirow{6}{*}{32Q}
+ & \multirow{2}{*}{VQC} 
+ & \textit{BMQsim-like} & 142.3 & 3.3 & 369.2 & 514.8 \\
+ &  & \textbf{\EdgeQuantum} & \textbf{81.3} & \textbf{3.2} & \textbf{277.3} & \textbf{361.7} \\
+\cline{2-7}
+ & \multirow{2}{*}{GHZ} 
+ & \textit{BMQsim-like} & 25.2 & 0.5 & 59.7 & 85.4 \\
+ &  & \textbf{\EdgeQuantum} & \textbf{15.6} & \textbf{0.5} & \textbf{54.4} & \textbf{70.4} \\
+\cline{2-7}
+ & \multirow{2}{*}{VQE} 
+ & \textit{BMQsim-like} & 140.0 & 3.2 & 366.3 & 509.5 \\
+ &  & \textbf{\EdgeQuantum} & \textbf{84.2} & \textbf{3.1} & \textbf{273.8} & \textbf{361.0} \\
+\hline
+\multirow{6}{*}{33Q}
+ & \multirow{2}{*}{VQC} 
+ & \textit{BMQsim-like} & 292.8 & 6.5 & 718.6 & 1017.9 \\
+ &  & \textbf{\EdgeQuantum} & \textbf{177.4} & \textbf{6.3} & \textbf{573.1} & \textbf{756.8} \\
+\cline{2-7}
+ & \multirow{2}{*}{GHZ} 
+ & \textit{BMQsim-like} & 50.7 & 1.1 & 121.7 & 173.5 \\
+ &  & \textbf{\EdgeQuantum} & \textbf{31.4} & \textbf{1.1} & \textbf{111.1} & \textbf{143.5} \\
+\cline{2-7}
+ & \multirow{2}{*}{VQE} 
+ & \textit{BMQsim-like} & 286.2 & 6.6 & 735.1 & 1027.9 \\
+ &  & \textbf{\EdgeQuantum} & \textbf{164.5} & \textbf{6.1} & \textbf{567.6} & \textbf{738.1} \\
+\hline
+\multirow{6}{*}{34Q}
+ & \multirow{2}{*}{VQC} 
+ & \textit{BMQsim-like} & 560.7 & 13.4 & 1494.9 & 2069.0 \\
+ &  & \textbf{\EdgeQuantum} & \textbf{328.0} & \textbf{12.5} & \textbf{1143.3} & \textbf{1483.8} \\
+\cline{2-7}
+ & \multirow{2}{*}{GHZ} 
+ & \textit{BMQsim-like} & 102.7 & 2.2 & 246.3 & 351.1 \\
+ &  & \textbf{\EdgeQuantum} & \textbf{69.7} & \textbf{2.0} & \textbf{218.5} & \textbf{290.2} \\
+\cline{2-7}
+ & \multirow{2}{*}{VQE} 
+ & \textit{BMQsim-like} & 573.2 & 13.0 & 1464.1 & 2050.3 \\
+ &  & \textbf{\EdgeQuantum} & \textbf{345.8} & \textbf{12.0} & \textbf{1116.1} & \textbf{1473.9} \\
+\hline
+\end{tabular}%
+}
+\label{tab:io_breakdown}
+\end{table}
+
+\begin{comment}
 \begin{table*}[t]
 \centering
 \tiny
@@ -99,6 +154,8 @@ VQE & 84.7 & \textbf{76.9} & 259.0 & \textbf{176.9} & 509.5 & \textbf{361.0} & 1
 }
 \label{tab:io_breakdown}
 \end{table*}
+    
+\end{comment}
 
 Since \EdgeQuantum streams state vector chunks through asynchronous storage I/O while overlapping with GPU computation, the source of its end-to-end speedup must be attributed across distinct phases of the data path. Table~\ref{tab:io_breakdown} decomposes the per-circuit execution time of \textit{BMQSim-like} and \EdgeQuantum into Read, Write, and Compute phases at 32 to 34 qubits.
 
@@ -179,7 +236,7 @@ As shown in the table, \EdgeQuantum exhibits stable, near-linear scalability as 
 \resizebox{\columnwidth}{!}{%
 \begin{tabular}{|c|c|r|r|r|r|r|r|}
 \hline
-\textbf{Qubits} & \textbf{Circuit} & \textbf{pread} & \textbf{decomp.} & \textbf{compute} & \textbf{compress} & \textbf{pwrite} & \textbf{Total} \\
+\textbf{Qubits} & \textbf{Circuit} & \textbf{pread} & \textbf{decomp} & \textbf{compute} & \textbf{compress} & \textbf{pwrite} & \textbf{Total} \\
 \hline
 \multirow{3}{*}{34Q}
  & VQC & 158.9 & 226.9 & 12.6 & 84.1 & 375.7 & 858.2 \\
