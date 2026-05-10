@@ -111,7 +111,7 @@ By serializing the I/O path and overlapping GPU execution, \EdgeQuantum hides wr
     \State $CompBuf \gets$ \textsc{AsyncRead}$(FileIn, OffsetIn, SizeIn)$
     \State $ShufBuf \gets$ \textsc{LZ4Decompress}$(CompBuf)$ \Comment{Decompress shuffled chunk}
     \State $UVMBuf \gets$ \textsc{ByteUnshuffle}$(ShufBuf)$ \Comment{Restore interleaved float32}
-    \State \textsc{GPUCompute}$(UVMBuf)$ \Comment{Apply gates (cross-chunk uses chunk pair}
+    \State \textsc{GPUCompute}$(UVMBuf)$ \Comment{Apply gates (cross-chunk uses chunk pair)}
     \State \textsc{MantissaTruncate}$(UVMBuf, T)$ \Comment{Zero lower $(23-T)$ mantissa bits}
     \State $ShufBuf \gets$ \textsc{ByteShuffle}$(UVMBuf)$ \Comment{Group same-position bytes}
     \State $SizeOut \gets$ \textsc{LZ4Compress}$(ShufBuf, CompBuf)$ 
