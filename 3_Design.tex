@@ -43,7 +43,7 @@ In \textit{Tiered Mode}, \EdgeQuantum employs a 4-buffer UVM pipeline that estab
 
 
 
-A fundamental challenge in edge computing is bridging the gap between GPU execution and storage. On NVIDIA Jetson platforms, the CPU and GPU share a DRAM pool under UMA. Figure~\ref{uvm_diff} shows how \EdgeQuantum leverages UMA to establish an efficient data path.
+A fundamental challenge in edge out-of-core simulation is the redundant host-to-device copies imposed by standard CUDA frameworks. On NVIDIA Jetson platforms, the CPU and GPU share a DRAM pool under UMA, enabling zero-copy data paths. Figure~\ref{uvm_diff} shows how \EdgeQuantum leverages UMA via UVM visibility control to establish an efficient data path.
 
 \noindent\textbf{Existing Storage-backed Execution. }Despite the shared DRAM on UMA platforms, existing quantum simulation frameworks rely on standard device memory allocation models. As shown at the top of Figure~\ref{uvm_diff}, using standard device memory allocation (e.g., \texttt{cudaMalloc}) enforces a logical separation between host and device memory spaces. When retrieving state vector chunks from storage, POSIX I/O system calls (e.g., \texttt{pread}) cannot perform Direct Memory Access (DMA) into device memory. The system stages the data in an intermediate host-side buffer, followed by an explicit \texttt{cudaMemcpy} (H2D). This data path has two limitations for resource-constrained edge devices. First, it doubles the physical memory footprint (2$\times$ Memory constraint). Second, the additional memory copy operation saturates memory bandwidth and reduces simulation throughput.
 
